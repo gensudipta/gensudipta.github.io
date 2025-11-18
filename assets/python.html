@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Dynamic Reference Hub (Condensed Interface) v27</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            padding: 0.25rem; 
+            background-color: #f9fafb; 
+            display: flex; 
+            flex-direction: column;
+            min-height: 100vh; 
+        }
+        .main-container { flex-grow: 1; max-width: 100%; } 
+        .bg-python-blue { background-color: #306998; }
+        .text-python-blue { color: #306998; }
+        .border-python-yellow { border-color: #FFD43B; }
+        .focus\:ring-python-blue:focus { border-color: #306998; box-shadow: 0 0 0 2px rgba(48, 105, 152, 0.5); }
+
+        .icon-button-style {
+            padding: 0.5rem 0.5rem; 
+            background-color: #FFD43B; 
+            color: #306998; 
+            font-weight: 700;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.15s;
+            flex-shrink: 0; 
+            height: 42px; 
+            width: 42px; 
+            line-height: 1;
+        }
+        .icon-button-style:hover {
+            background-color: #f5c407; 
+        }
+        .icon-button-style svg {
+            fill: #306998; 
+            stroke: #306998;
+            height: 20px;
+            width: 20px;
+            margin-left: 3px; 
+        }
+        
+        .output-wrapper {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            min-height: 550px; 
+        }
+        .output-header {
+            padding: 0.75rem 1rem; 
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+        .doc-section {
+            padding: 0.75rem 1rem; 
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .doc-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header { 
+            font-size: 1.5rem;
+            font-weight: 900; 
+            margin-top: 0.5rem; 
+            margin-bottom: 0.5rem; 
+            padding-left: 0.75rem; 
+            border-left: 6px solid #FFD43B;
+            color: #1f2937; 
+            line-height: 1.2;
+            background-color: #fefce8; 
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
+            border-radius: 0.25rem 0 0 0.25rem;
+        }
+        
+        #codeContainer { 
+            background-color: #1f2937; 
+            color: #f3f4f6; 
+            padding: 1rem; 
+            border-radius: 0.5rem; 
+            overflow-x: auto; 
+            font-family: monospace; 
+            font-size: 0.85em;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+            white-space: pre; 
+            padding-top: 2rem;
+        }
+
+        .output-display-box {
+            background-color: #e5e7eb; 
+            color: #1f2937; 
+            padding: 1rem; 
+            border-radius: 0.5rem; 
+            overflow-x: auto; 
+            font-family: monospace; 
+            font-size: 0.9em;
+            white-space: pre-wrap; 
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); 
+            border: 1px solid #d1d5db;
+        }
+        
+        .technical-summary-list > div {
+            padding: 0.5rem 0.75rem; 
+        }
+        
+        @media (min-width: 1024px) {
+            .main-content {
+                display: grid;
+                grid-template-columns: 280px 1fr; 
+                gap: 0.5rem; 
+            }
+        }
+    </style>
+    <script>
+        const apiKey = ""; 
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        const PYTHON_REFERENCE_INDEX = [
+            {
+                title: 'Built-in Functions, Types, & Exceptions',
+                key: 'builtins',
+                isNested: true,
+                subCategories: {
+                    'Fundamental I/O & Iteration (12)': [
+                        'print() function', 'input() function', 'len() function', 'range() function', 
+                        'zip() function', 'enumerate() function', 'open() function', 'iter() function', 
+                        'next() function', 'reversed() function', 'aiter() function', 'anext() function'
+                    ],
+                    'Type Conversion & Inspection (18)': [
+                        'str() function', 'int() function', 'float() function', 'bool() function', 
+                        'complex() function', 'type() function', 'id() function', 'repr() function',
+                        'ascii() function', 'bin() function', 'hex() function', 'oct() function', 
+                        'chr() function', 'ord() function', 'callable() function', 'isinstance() function',
+                        'issubclass() function', 'vars() function'
+                    ],
+                    'Data Structure Constructors (10)': [
+                        'list() function', 'dict() function', 'set() function', 'tuple() function', 
+                        'frozenset() function', 'bytearray() function', 'bytes() function', 
+                        'memoryview() function', 'object() function', 'slice() function'
+                    ],
+                    'Math, Aggregate, & HOF (12)': [
+                        'abs() function', 'round() function', 'min() function', 'max() function', 
+                        'sum() function', 'pow() function', 'divmod() function', 'sorted() function', 
+                        'all() function', 'any() function', 'map() function', 'filter() function'
+                    ],
+                    'Object, Attribute & Descriptor (10)': [
+                        'classmethod() function', 'staticmethod() function', 'property() function', 
+                        'super() function', 'getattr() function', 'hasattr() function', 'setattr() function', 
+                        'delattr() function', 'dir() function', 'format() function'
+                    ],
+                    'Runtime & Code Execution (9)': [
+                        'eval() function', 'exec() function', 'compile() function', 'globals() function', 
+                        'locals() function', 'hash() function', 'help() function', 'breakpoint() function', 
+                        '__import__() function'
+                    ],
+                    'Core Types (Objects)': [
+                        'list type', 'dict type', 'str type', 'int type', 'float type', 'bool type', 
+                        'tuple type', 'set type', 'complex type'
+                    ],
+                    'Exceptions (Errors)': [
+                        'ValueError', 'TypeError', 'IndexError', 'KeyError', 'AttributeError', 
+                        'ZeroDivisionError', 'FileNotFoundError', 'StopIteration', 'MemoryError', 
+                        'IndentationError', 'ImportError', 'NameError'
+                    ]
+                }
+            },
+            {
+                title: 'Keywords & Core Concepts',
+                key: 'concepts',
+                isNested: true,
+                subCategories: {
+                    'Control Flow & Syntax': [
+                        'for loop', 'while loop', 'if...elif...else', 'with statement', 'try...except...finally',
+                        'break keyword', 'continue keyword', 'return keyword', 'pass keyword', 
+                        'match...case (Structural Pattern Matching)', 'assert statement', 'del statement'
+                    ],
+                    'Object-Oriented Programming (OOP)': [
+                        'class keyword', 'def keyword', '__init__ method (Constructor)', 'Inheritance (Python)', 
+                        'Polymorphism (Python)', '@staticmethod decorator', '@classmethod decorator', 
+                        '@property decorator', 'Dunder Methods (Magic Methods)', 'Abstract Base Classes (ABC)'
+                    ],
+                    'Advanced Language Features': [
+                        'lambda function', 'Decorator (Python)', 'list comprehension', 'dictionary comprehension', 
+                        'Generator Expression', 'yield keyword (Generators)', 'Global keyword', 'Nonlocal keyword',
+                        'async/await keywords (Concurrency)', 'f-strings (Formatted Strings)', 'Type Hinting (typing module)'
+                    ]
+                }
+            },
+            {
+                title: 'Standard Library Modules',
+                key: 'stdlib',
+                isNested: true,
+                subCategories: {
+                    'System & Operating System Access': [
+                        'os module', 'sys module', 'pathlib module', 'shutil module', 'tempfile module', 'argparse module',
+                        'subprocess module', 'platform module', 'getpass module'
+                    ],
+                    'Data Structures & Algorithms': [
+                        'collections module', 'itertools module', 'functools module', 'heapq module', 'dataclasses module',
+                        'queue module', 'typing module'
+                    ],
+                    'Math & Numeric Operations': [
+                        'math module', 'random module', 'decimal module', 'statistics module'
+                    ],
+                    'Text, String & Regular Expressions': [
+                        're module (Regular Expressions)', 'string module', 'textwrap module'
+                    ],
+                    'Data Serialization & Persistence': [
+                        'json module', 'csv module', 'sqlite3 module', 'pickle module'
+                    ],
+                    'Date, Time & Calendar': [
+                        'datetime module', 'time module', 'calendar module'
+                    ],
+                    'Networking & Web': [
+                        'requests module (Note: external, but heavily used)', 'urllib module', 'socket module'
+                    ],
+                    'Development Tools & Testing': [
+                        'logging module', 'unittest module', 'pdb module', 'doctest module'
+                    ]
+                }
+            }
+        ];
+
+        function collectModules(sectionKey, categoryName) {
+            let modules = [];
+            if (sectionKey === 'all' && categoryName === 'All Terms') {
+                PYTHON_REFERENCE_INDEX.forEach(section => {
+                    if (section.isNested) {
+                        Object.keys(section.subCategories).forEach(cat => {
+                            modules = modules.concat(section.subCategories[cat]);
+                        });
+                    }
+                });
+            } else {
+                const sectionData = PYTHON_REFERENCE_INDEX.find(s => s.key === sectionKey);
+                const bareCategoryName = categoryName.replace(/\s*\(\d+\)$/, '');
+                
+                if (sectionData) {
+                    let foundCategory = sectionData.subCategories[categoryName] || sectionData.subCategories[bareCategoryName];
+                    if (!foundCategory) {
+                        for (const key in sectionData.subCategories) {
+                            if (key.startsWith(bareCategoryName)) {
+                                foundCategory = sectionData.subCategories[key];
+                                break;
+                            }
+                        }
+                    }
+                    if (foundCategory) {
+                        modules = foundCategory;
+                    }
+                }
+            }
+            return modules.sort();
+        }
+
+        function updateModuleSelector(initialTerm = null) {
+            const sectionSelector = document.getElementById('sectionSelector');
+            const categorySelector = document.getElementById('categorySelector');
+            const moduleSelector = document.getElementById('moduleSelector');
+
+            const selectedSectionKey = sectionSelector.value;
+            const selectedCategoryName = categorySelector.value;
+
+            moduleSelector.innerHTML = '<option value="">-- Select a Python Term --</option>';
+            moduleSelector.value = ''; 
+            document.getElementById('moduleInput').value = ''; 
+
+            if (!selectedCategoryName || selectedCategoryName === 'all_categories') {
+                moduleSelector.classList.add('hidden');
+                document.getElementById('outputTitle').textContent = `Select a Term`; 
+                document.getElementById('outputContent').innerHTML = `<div class="p-4 text-gray-500">Please select a <b>Category</b> to reveal the available Python terms on the left, or use the search box above.</div>`;
+                return;
+            }
+
+            moduleSelector.classList.remove('hidden');
+
+            const modules = collectModules(selectedSectionKey, selectedCategoryName);
+
+            if (modules.length > 0) {
+                modules.forEach(moduleName => {
+                    moduleSelector.innerHTML += `<option value="${moduleName}">${moduleName}</option>`;
+                });
+                
+                if (initialTerm && modules.includes(initialTerm)) {
+                    moduleSelector.value = initialTerm;
+                    document.getElementById('moduleInput').value = initialTerm;
+                }
+            }
+
+            moduleSelector.onchange = () => {
+                const query = moduleSelector.value;
+                if (query) {
+                    document.getElementById('moduleInput').value = query;
+                }
+            };
+        }
+
+        function updateCategorySelector(initialCategory = null, initialTerm = null) {
+            const sectionSelector = document.getElementById('sectionSelector');
+            const categorySelector = document.getElementById('categorySelector');
+            const selectedSectionKey = sectionSelector.value;
+            
+            categorySelector.innerHTML = '<option value="all_categories" disabled selected>-- Select a Category --</option>';
+            categorySelector.value = 'all_categories';
+            categorySelector.classList.remove('hidden'); 
+
+            if (!selectedSectionKey) {
+                updateModuleSelector(null);
+                categorySelector.classList.add('hidden'); 
+                document.getElementById('outputTitle').textContent = `Select a Section`; 
+                document.getElementById('outputContent').innerHTML = `<div class="p-4 text-gray-500">Please select a <b>Section</b> from the first dropdown to proceed.</div>`;
+                return;
+            }
+            
+            if (selectedSectionKey === 'all') {
+                const allModules = collectModules('all', 'All Terms');
+                const allTermsValue = "All Terms";
+                categorySelector.innerHTML += `<option value="${allTermsValue}">All Terms</option>`;
+                categorySelector.onchange = () => updateModuleSelector(initialTerm);
+                
+                if (initialCategory === allTermsValue) {
+                    categorySelector.value = allTermsValue;
+                    if (allModules.includes(initialTerm)) {
+                        updateModuleSelector(initialTerm);
+                    } else {
+                        updateModuleSelector(null);
+                    }
+                } else {
+                    updateModuleSelector(null); 
+                }
+                return;
+            }
+
+            const sectionData = PYTHON_REFERENCE_INDEX.find(s => s.key === selectedSectionKey);
+
+            if (sectionData && sectionData.isNested) {
+                const categories = sectionData.subCategories;
+                for (const categoryNameWithCount in categories) {
+                    const categoryDisplayName = categoryNameWithCount.replace(/\s*\(\d+\)$/, '');
+                    const isInitialCategory = initialCategory && categoryNameWithCount.startsWith(initialCategory.replace(/\s*\(\d+\)$/, ''));
+                    
+                    categorySelector.innerHTML += `<option value="${categoryNameWithCount}">${categoryDisplayName}</option>`;
+
+                    if (isInitialCategory) {
+                        categorySelector.value = categoryNameWithCount;
+                    }
+                }
+            }
+            
+            categorySelector.onchange = () => updateModuleSelector(initialTerm);
+            updateModuleSelector(initialTerm); 
+        }
+
+        function formatNarrativeText(text) {
+            let content = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            content = content.replace(/__(.*?)__/g, '<b>$1</b>');
+            
+            return content.split('\n').map(p => {
+                const trimmedP = p.trim();
+                return trimmedP ? `<p class="description-text">${trimmedP}</p>` : '';
+            }).join('');
+        }
+        
+        function renderStructuredOutput(data) {
+            
+            let summaryHtml = '<dl class="technical-summary-list">';
+            data.technicalSummary.forEach(item => {
+                const property = item.property.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const description = item.description.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                summaryHtml += `
+                    <div>
+                        <dt class="font-bold text-gray-700">${property}</dt>
+                        <dd class="text-gray-600">${description}</dd>
+                    </div>
+                `;
+            });
+            summaryHtml += '</dl>';
+
+            const outputContent = data.expectedOutput.trim();
+
+            const htmlContent = `
+                <div class="doc-section">
+                    <h2 class="section-header">Technical Summary</h2>
+                    ${summaryHtml}
+                </div>
+
+                <div class="doc-section">
+                    <h2 class="section-header">Detailed Usage/Example</h2>
+                    <h3 class="text-lg font-bold text-python-blue mb-2 mt-4">Code Logic Explanation</h3>
+                    <div class="description-text">
+                        ${formatNarrativeText(data.detailedUsage)}
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-python-blue mb-2 mt-4">Python Example Code</h3>
+                    
+                    <div class="relative mt-4">
+                        <button 
+                            onclick="copyCode()" 
+                            class="copy-button absolute top-2 right-2 p-1.5 rounded-md bg-gray-600 text-white hover:bg-gray-700 transition duration-150 z-10"
+                            title="Copy Code"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                        <pre id="codeContainer">${data.exampleCode.trim()}</pre>
+                    </div>
+                </div>
+
+                <div class="doc-section">
+                    <h2 class="section-header">Predicted Output</h2>
+                    <p class="text-xs text-gray-500 italic mt-1 mb-2">This output is generated by the AI model. Run the code above to verify the exact result.</p>
+                    <pre class="output-display-box">${outputContent}</pre>
+                </div>
+            `;
+            document.getElementById('outputContent').innerHTML = htmlContent;
+        }
+
+        function copyCode() {
+            const codeContainer = document.getElementById('codeContainer');
+            const textToCopy = codeContainer.textContent || codeContainer.innerText;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = 0;
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            let successful = false;
+            try {
+                successful = document.execCommand('copy');
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+            showCopySuccess(successful);
+        }
+
+        function showCopySuccess(successful) {
+            const button = document.querySelector('.copy-button');
+            const originalContent = button.innerHTML;
+            
+            if (successful) {
+                button.innerHTML = '<span class="font-bold text-xs">COPIED!</span>';
+                button.classList.add('bg-green-600');
+            } else {
+                button.innerHTML = '<span class="font-bold text-xs">Error!</span>';
+                button.classList.add('bg-red-600');
+            }
+
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.classList.remove('bg-green-600', 'bg-red-600');
+            }, 1500);
+        }
+
+        async function searchDocumentation() {
+            const query = document.getElementById('moduleInput').value.trim();
+            
+            if (query === '') {
+                document.getElementById('outputTitle').textContent = `Search Required`;
+                document.getElementById('outputContent').innerHTML = `
+                    <div class="p-4 text-yellow-700 bg-yellow-50 rounded-lg">
+                        <p class="text-lg font-bold">Please enter a search term or select an item from the Topic Selection menu.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            setLoading(query);
+
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    "technicalSummary": { 
+                        "type": "ARRAY", 
+                        "description": "A list of 3 to 6 key features, methods, or parameters, each with a short description.",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "property": { "type": "STRING", "description": "The name of the feature, method, or parameter (e.g., 'os.path.exists', 'Purpose')" },
+                                "description": { "type": "STRING", "description": "The short, one-sentence description of the property or feature." }
+                            },
+                            "required": ["property", "description"]
+                        }
+                    },
+                    "detailedUsage": { "type": "STRING", "description": "A detailed explanation of the code logic. Use natural paragraph structure and **double asterisks** for bolding key terms. Do not include markdown code fences or backticks." },
+                    "exampleCode": { "type": "STRING", "description": "The complete, runnable Python code example. This must be pure code text, without any surrounding code block wrappers (e.g., no ```python or backticks)." },
+                    "expectedOutput": { "type": "STRING", "description": "The exact, literal output of the example code block. This must be clean, plain text, without any surrounding code block wrappers, backticks, or explanatory text." }
+                },
+                propertyOrdering: ["technicalSummary", "detailedUsage", "exampleCode", "expectedOutput"]
+            };
+
+            const systemPrompt = "You are a world-class Python technical writer. Your task is to generate a comprehensive reference guide for the Python term or module provided. The output MUST strictly follow the provided JSON schema. Ensure the 'exampleCode' is runnable and the 'expectedOutput' is the literal result of running that code. Do not include any conversational text or introductory sentences outside of the JSON structure. In the 'detailedUsage', use **double asterisks** for bolding key terms. Keep descriptions concise.";
+            const userQuery = `Generate the comprehensive Python documentation for: ${query}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema
+                }
+            };
+
+            const maxRetries = 3;
+            let attempt = 0;
+
+            while (attempt < maxRetries) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        attempt++;
+                        if (attempt < maxRetries) {
+                            const delay = Math.pow(2, attempt) * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (!jsonText) {
+                        throw new Error("Model returned an empty response.");
+                    }
+
+                    const data = JSON.parse(jsonText);
+                    
+                    document.getElementById('outputTitle').textContent = `Reference for: ${query}`;
+                    renderStructuredOutput(data);
+                    return;
+
+                } catch (error) {
+                    console.error("Error fetching documentation:", error);
+                    document.getElementById('outputTitle').textContent = `Error loading reference for: ${query}`;
+                    document.getElementById('outputContent').innerHTML = `
+                        <div class="p-4 text-red-700 bg-red-50 rounded-lg">
+                            <h2 class="text-xl font-bold mb-2">Failed to generate Documentation</h2>
+                            <p>An error occurred while fetching or parsing the structured response. This usually means the LLM response was not valid JSON or a network error occurred. Check the console for details.</p>
+                            <p class="text-sm mt-1">Please try again or select a different term.</p>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+        }
+        
+        function setLoading(query) {
+            document.getElementById('outputTitle').textContent = `Generating documentation for: ${query}`;
+            document.getElementById('outputContent').innerHTML = `
+                <div class="p-8 text-center">
+                    <div class="animate-spin inline-block w-8 h-8 border-4 border-t-4 border-python-blue border-t-transparent rounded-full mb-3"></div>
+                    <p class="text-lg font-semibold text-gray-700">Loading documentation...</p>
+                    <p class="text-sm text-gray-500 mt-1">This uses a large language model to create a comprehensive reference in real-time. Please wait.</p>
+                </div>
+            `;
+        }
+
+
+        window.onload = () => {
+            const sectionSelector = document.getElementById('sectionSelector');
+            sectionSelector.addEventListener('change', () => updateCategorySelector(null, null)); 
+
+            updateCategorySelector(null, null);
+        };
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen p-1">
+
+    <div class="main-container max-w-7xl mx-auto space-y-2">
+        
+
+<header class="p-3 bg-python-blue text-white rounded-xl shadow-xl flex items-center justify-center">
+            <h1 class="text-xl sm:text-3xl font-black tracking-tight flex items-center justify-center space-x-2">
+                <span>Python Reference Hub</span>
+            </h1>
+        </header>
+
+        
+
+<div class="bg-white p-2 rounded-xl shadow-lg border-l-4 border-python-yellow">
+            <div class="flex space-x-2">
+                <input
+                    type="text"
+                    id="moduleInput"
+                    placeholder="Search any Python term"
+                    class="flex-grow p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-python-blue focus:border-python-blue text-sm"
+                    onkeydown="if(event.key === 'Enter') { searchDocumentation(); }"
+                    value=""
+                >
+                <button
+                    id="searchButton"
+                    onclick="searchDocumentation()"
+                    class="icon-button-style flex items-center justify-center"
+                    title="Generate Reference"
+                >
+                    
+
+<svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        
+
+<div class="main-content">
+            
+
+<div class="module-index-container bg-white p-2 rounded-xl shadow-lg border border-gray-200 space-y-2">
+                <h2 class="text-base font-bold text-gray-800 border-b pb-1">Topic Selection</h2>
+                
+                
+
+<select
+                    id="sectionSelector"
+                    class="w-full p-2 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-python-blue focus:border-python-blue text-sm"
+                >
+                    <option value="" disabled selected>-- Select a Section --</option>
+                    <option value="builtins">Built-in Functions, Types, & Exceptions</option>
+                    <option value="concepts">Keywords & Core Concepts</option>
+                    <option value="stdlib">Standard Library Modules</option>
+                    <option value="all">-- View All Sections --</option>
+                </select>
+
+                
+
+<select
+                    id="categorySelector"
+                    class="w-full p-2 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-python-blue focus:border-python-blue text-sm hidden"
+                >
+                    
+
+</select>
+
+                
+
+<select
+                    id="moduleSelector"
+                    class="w-full p-2 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-python-blue focus:border-python-blue text-sm hidden"
+                >
+                    
+
+</select>
+            </div>
+
+            
+
+<div id="output" class="output-wrapper">
+                <div class="output-header">
+                    <h2 id="outputTitle" class="text-xl font-extrabold text-gray-900 mb-0">Select a Section</h2>
+                </div>
+                <div id="outputContent">
+                    
+
+<div class="p-4 text-gray-500">
+                        Please select a <b>Section</b> from the first dropdown or use the search box to generate documentation.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    
+
+<footer class="mt-2 p-2 bg-white rounded-xl shadow-inner text-center text-sm border-t border-gray-200">
+        <div class="flex items-center justify-center space-x-1 font-medium opacity-90">
+            <span class="text-python-blue">Powered by Gemini</span>
+        </div>
+    </footer>
+</body>
+</html>
+
