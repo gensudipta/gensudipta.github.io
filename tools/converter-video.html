@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Video Converter - Translit Media</title>
+    
+    <!-- EXTERNAL LIBRARIES -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--surface);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(0,0,0,0.05);
+        }
+
+        @media(min-width: 768px) {
+            body { padding: 40px 20px; align-items: flex-start; }
+            .app-container {
+                min-height: auto;
+                border-radius: 24px;
+                overflow: hidden;
+                border: 1px solid var(--border);
+            }
+        }
+
+        .header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 10;
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
+        .brand i { font-size: 1.5rem; color: var(--primary); }
+
+        .back-btn {
+            background: transparent; border: 1px solid var(--border);
+            padding: 8px 12px; border-radius: 8px; cursor: pointer;
+            font-size: 0.9rem; color: var(--text-sub); display: flex; align-items: center; gap: 5px;
+        }
+        .back-btn:hover { background: var(--bg); color: var(--text-main); }
+
+        .content { padding: 24px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1; border-radius: 16px; padding: 40px 20px;
+            text-align: center; cursor: pointer; transition: 0.2s; background: #f8fafc;
+        }
+        .upload-area:active, .upload-area:hover { border-color: var(--primary); background: #eef2ff; }
+        .upload-icon { font-size: 3rem; color: var(--primary); margin-bottom: 15px; }
+
+        .video-frame {
+            background: #000; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative;
+            display: none; border: 4px solid #1e293b;
+        }
+        video { width: 100%; height: auto; max-height: 400px; display: block; }
+        canvas { display: none; }
+
+        .video-meta-tag {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.7); color: white;
+            padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;
+            backdrop-filter: blur(4px); font-weight: 600;
+        }
+
+        .config-section { display: none; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .config-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media(min-width: 600px) {
+            .config-grid { grid-template-columns: 1fr 1fr; }
+            .full-width { grid-column: span 2; }
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-label { font-size: 0.8rem; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .form-control {
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            font-family: 'Inter', sans-serif; font-size: 0.95rem; background: white; width: 100%;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; appearance: none;
+        }
+        input.form-control { background-image: none; }
+
+        .custom-res-row { display: flex; gap: 10px; align-items: center; display: none; margin-top: 5px; }
+        .x-divider { color: var(--text-sub); font-weight: bold; }
+
+        .action-bar {
+            margin-top: 20px; position: sticky; bottom: 0; background: var(--surface); padding: 20px 0; border-top: 1px solid transparent;
+        }
+        @media(max-width: 768px) { .action-bar { border-top: 1px solid var(--border); margin: 0 -24px; padding: 16px 24px; } }
+
+        .btn {
+            width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-download { background: #10b981; color: white; display: none; text-decoration: none; }
+
+        .progress-overlay { margin-top: 15px; display: none; }
+        .progress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+        .status-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 8px; color: var(--text-sub); }
+    </style>
+</head>
+<body>
+
+
+<div class="app-container">
+    <header class="header">
+        <button class="back-btn" onclick="window.history.back()">
+            <i class="ph ph-arrow-left"></i> Back
+        </button>
+        <div class="brand">
+            <i class="ph ph-film-strip"></i>
+            <span>Smart Video Converter</span>
+        </div>
+    </header>
+
+    <div class="content">
+        <!-- Upload -->
+        <label class="upload-area" id="dropZone">
+            <input type="file" id="fileInput" accept="video/*" style="display: none;">
+            <i class="ph ph-upload-simple upload-icon"></i>
+            <h3>Tap to Upload Video</h3>
+            <p class="upload-hint">MP4, MOV, MKV, AVI, WEBM</p>
+        </label>
+
+        <!-- Preview -->
+        <div class="video-frame" id="videoFrame">
+            <video id="videoPreview" playsinline muted crossorigin="anonymous"></video>
+            <div class="video-meta-tag" id="videoMeta"></div>
+            <canvas id="resizeCanvas"></canvas>
+        </div>
+
+        <!-- Config -->
+        <div class="config-section" id="configSection">
+            <div class="input-group">
+                <label class="input-label">Filename</label>
+                <input type="text" id="fileNameInput" class="form-control" placeholder="my-video">
+            </div>
+
+            <div class="config-grid">
+                <!-- Resolution -->
+                <div class="input-group full-width">
+                    <label class="input-label">Resolution / Size</label>
+                    <select id="resSelect" class="form-control" onchange="toggleCustomRes()">
+                        <option value="original" selected>Original Size (Default)</option>
+                        <option value="custom">Custom Size...</option>
+                        <optgroup label="High Definition">
+                            <option value="2160">2160p (4K)</option>
+                            <option value="1080">1080p (Full HD)</option>
+                            <option value="720">720p (HD)</option>
+                        </optgroup>
+                        <optgroup label="Standard / Web">
+                            <option value="480">480p (SD)</option>
+                            <option value="360">360p (Data Saver)</option>
+                        </optgroup>
+                        <optgroup label="Classic / Mobile">
+                            <option value="240">240p (QVGA)</option>
+                            <option value="144">144p (QCIF)</option>
+                        </optgroup>
+                    </select>
+                    
+                    <div id="customResBox" class="custom-res-row">
+                        <input type="number" id="customWidth" class="form-control" placeholder="Width">
+                        <span class="x-divider">x</span>
+                        <input type="number" id="customHeight" class="form-control" placeholder="Height">
+                    </div>
+                </div>
+
+                <!-- Format -->
+                <div class="input-group full-width">
+                    <label class="input-label">Format</label>
+                    <select id="mimeSelect" class="form-control"></select>
+                </div>
+
+                <!-- Volume / Audio -->
+                <div class="input-group full-width">
+                    <label class="input-label">Volume Control</label>
+                    <select id="volumeSelect" class="form-control">
+                        <option value="1" selected>Original Volume</option>
+                        <option value="0">Mute (Remove Audio)</option>
+                        <option value="0.5">50% (Softer)</option>
+                        <option value="2">200% (Boost)</option>
+                        <option value="3">300% (High Boost)</option>
+                        <option value="4">400% (Max Boost)</option>
+                    </select>
+                </div>
+
+                <!-- FPS -->
+                <div class="input-group">
+                    <label class="input-label">Frame Rate</label>
+                    <select id="fpsSelect" class="form-control">
+                        <option value="15">15 FPS (Mobile/Low)</option>
+                        <option value="24">24 FPS (Cinematic)</option>
+                        <option value="30" selected>30 FPS (Standard)</option>
+                        <option value="60">60 FPS (Smooth)</option>
+                    </select>
+                </div>
+
+                <!-- Bitrate -->
+                <div class="input-group">
+                    <label class="input-label">Video Bitrate</label>
+                    <select id="videoBitrate" class="form-control">
+                        <option value="150000">150 kbps (GPRS)</option>
+                        <option value="500000">500 kbps (3G)</option>
+                        <option value="1000000">1 Mbps (Low)</option>
+                        <option value="2500000" selected>2.5 Mbps (720p)</option>
+                        <option value="5000000">5 Mbps (1080p)</option>
+                        <option value="25000000">25 Mbps (4K)</option>
+                        <option value="50000000">50 Mbps (4K High)</option>
+                    </select>
+                </div>
+
+                <!-- Speed -->
+                <div class="input-group">
+                    <label class="input-label">Speed</label>
+                    <select id="speedSelect" class="form-control">
+                        <option value="1">1x (Best Quality)</option>
+                        <option value="2" selected>2x (Balanced)</option>
+                        <option value="4">4x (Fastest)</option>
+                    </select>
+                </div>
+
+                 <!-- Audio Quality -->
+                 <div class="input-group">
+                    <label class="input-label">Audio Quality</label>
+                    <select id="audioBitrate" class="form-control">
+                        <option value="64000">64 kbps (Voice)</option>
+                        <option value="128000" selected>128 kbps</option>
+                        <option value="320000">320 kbps (Max)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <button id="convertBtn" class="btn btn-primary" onclick="startConversion()">
+                    <i class="ph ph-lightning"></i> Convert Video
+                </button>
+
+                <div class="progress-overlay" id="progressOverlay">
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="status-row">
+                        <span id="statusText">Processing...</span>
+                        <span id="percentText">0%</span>
+                    </div>
+                </div>
+
+                <a id="downloadBtn" class="btn btn-download">
+                    <i class="ph ph-download"></i> Save Video
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const videoPreview = document.getElementById('videoPreview');
+    const videoMeta = document.getElementById('videoMeta');
+    const resizeCanvas = document.getElementById('resizeCanvas');
+    const configSection = document.getElementById('configSection');
+    const mimeSelect = document.getElementById('mimeSelect');
+    const fileNameInput = document.getElementById('fileNameInput');
+    const resSelect = document.getElementById('resSelect');
+    const customResBox = document.getElementById('customResBox');
+    const volumeSelect = document.getElementById('volumeSelect');
+    
+    const convertBtn = document.getElementById('convertBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const progressOverlay = document.getElementById('progressOverlay');
+    const progressFill = document.getElementById('progressFill');
+    const statusText = document.getElementById('statusText');
+    const percentText = document.getElementById('percentText');
+
+    let videoOrientation = 'landscape';
+    let originalWidth = 0;
+    let originalHeight = 0;
+    let audioCtx = null;
+
+    // Formats
+    const types = [
+        { name: "WebM (VP9)", mime: "video/webm; codecs=vp9", ext: "webm" },
+        { name: "WebM (VP8/Legacy)", mime: "video/webm; codecs=vp8", ext: "webm" },
+        { name: "WebM (AV1)", mime: "video/webm; codecs=av1", ext: "webm" },
+        { name: "MP4 (H.264)", mime: "video/mp4; codecs=avc1.42E01E, mp4a.40.2", ext: "mp4" },
+        { name: "MP4 (H.265)", mime: "video/mp4; codecs=hevc, mp4a.40.2", ext: "mp4" },
+        { name: "MKV", mime: "video/x-matroska; codecs=avc1", ext: "mkv" },
+        { name: "WebM (Standard)", mime: "video/webm", ext: "webm" }
+    ];
+
+    function initFormats() {
+        mimeSelect.innerHTML = '';
+        types.forEach(t => {
+            if(MediaRecorder.isTypeSupported(t.mime)) {
+                const opt = document.createElement('option');
+                opt.value = t.mime; opt.text = t.name; opt.dataset.ext = t.ext;
+                mimeSelect.appendChild(opt);
+            }
+        });
+        if(mimeSelect.options.length===0) {
+            const opt = document.createElement('option');
+            opt.text = "Standard WebM"; opt.value = "video/webm"; opt.dataset.ext = "webm";
+            mimeSelect.appendChild(opt);
+        }
+    }
+    initFormats();
+
+    function toggleCustomRes() {
+        customResBox.style.display = resSelect.value === 'custom' ? 'flex' : 'none';
+    }
+
+    // Drag Drop
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.borderColor = '#cbd5e1'; });
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', (e) => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+
+    function loadFile(file) {
+        if(!file.type.startsWith('video/')) return alert("Not a video file");
+        const url = URL.createObjectURL(file);
+        videoPreview.src = url;
+
+        videoPreview.onloadedmetadata = () => {
+            originalWidth = videoPreview.videoWidth;
+            originalHeight = videoPreview.videoHeight;
+            
+            if (originalHeight > originalWidth) {
+                videoOrientation = 'portrait';
+                videoMeta.innerText = `Portrait (${originalWidth}x${originalHeight})`;
+            } else {
+                videoOrientation = 'landscape';
+                videoMeta.innerText = `Landscape (${originalWidth}x${originalHeight})`;
+            }
+
+            document.getElementById('customWidth').value = originalWidth;
+            document.getElementById('customHeight').value = originalHeight;
+            
+            dropZone.style.display = 'none';
+            document.getElementById('videoFrame').style.display = 'block';
+            configSection.style.display = 'block';
+            fileNameInput.value = file.name.split('.')[0];
+            downloadBtn.style.display = 'none';
+            convertBtn.style.display = 'flex';
+        };
+    }
+
+    async function startConversion() {
+        const mimeType = mimeSelect.value;
+        const fps = parseInt(document.getElementById('fpsSelect').value);
+        const vBit = parseInt(document.getElementById('videoBitrate').value);
+        const aBit = parseInt(document.getElementById('audioBitrate').value);
+        const speed = parseInt(document.getElementById('speedSelect').value);
+        const resValue = resSelect.value;
+        const volumeVal = parseFloat(volumeSelect.value);
+
+        convertBtn.style.display = 'none';
+        progressOverlay.style.display = 'block';
+
+        let videoStream, audioStream;
+        let drawLoop = null;
+
+        // 1. Video Stream Setup (Resizing)
+        let targetWidth, targetHeight, needsResize = false;
+
+        if (resValue === "custom") {
+            targetWidth = parseInt(document.getElementById('customWidth').value) || originalWidth;
+            targetHeight = parseInt(document.getElementById('customHeight').value) || originalHeight;
+            needsResize = true;
+        } else if (resValue !== "original") {
+            const presetSize = parseInt(resValue);
+            const aspectRatio = originalWidth / originalHeight;
+            if (videoOrientation === 'landscape') {
+                targetHeight = presetSize;
+                targetWidth = Math.round(targetHeight * aspectRatio);
+            } else {
+                targetWidth = presetSize;
+                targetHeight = Math.round(targetWidth / aspectRatio);
+            }
+            needsResize = true;
+        }
+
+        if (!needsResize) {
+            try {
+                if (videoPreview.captureStream) videoStream = videoPreview.captureStream(fps);
+                else if (videoPreview.mozCaptureStream) videoStream = videoPreview.mozCaptureStream(fps);
+                else throw new Error("No Capture");
+            } catch(e) { return alert("Browser does not support stream capture"); }
+        } else {
+            if(targetWidth % 2 !== 0) targetWidth--;
+            if(targetHeight % 2 !== 0) targetHeight--;
+            resizeCanvas.width = targetWidth;
+            resizeCanvas.height = targetHeight;
+            const ctx = resizeCanvas.getContext('2d');
+            videoStream = resizeCanvas.captureStream(fps);
+            drawLoop = () => {
+                if(videoPreview.paused || videoPreview.ended) return;
+                ctx.drawImage(videoPreview, 0, 0, targetWidth, targetHeight);
+                requestAnimationFrame(drawLoop);
+            };
+        }
+
+        // 2. Audio Stream Setup (Gain / Mute)
+        let finalStream;
+        
+        if (volumeVal === 0) {
+            // Mute: Just use video track
+            finalStream = new MediaStream(videoStream.getVideoTracks());
+        } else if (volumeVal !== 1) {
+            // Boost / Reduce
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioCtx.createMediaElementSource(videoPreview);
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = volumeVal;
+            const dest = audioCtx.createMediaStreamDestination();
+            
+            source.connect(gainNode);
+            gainNode.connect(dest);
+            
+            // Connect to speaker only if speed is 1x (to avoid annoying high pitch noise)
+            if(speed === 1) gainNode.connect(audioCtx.destination);
+
+            audioStream = dest.stream;
+            finalStream = new MediaStream([...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+        } else {
+            // Original Audio
+            if (needsResize) {
+                let tempStream = videoPreview.captureStream ? videoPreview.captureStream() : videoPreview.mozCaptureStream();
+                let audioTracks = tempStream.getAudioTracks();
+                if(audioTracks.length > 0) {
+                     finalStream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
+                } else {
+                     finalStream = videoStream; // No audio found
+                }
+            } else {
+                finalStream = videoStream; // Native capture has both
+            }
+        }
+
+        // 3. Recorder
+        const options = { mimeType: mimeType, videoBitsPerSecond: vBit, audioBitsPerSecond: aBit };
+        let mediaRecorder;
+        try { mediaRecorder = new MediaRecorder(finalStream, options); }
+        catch (e) { mediaRecorder = new MediaRecorder(finalStream, { mimeType: mimeType.split(';')[0] }); }
+
+        const chunks = [];
+        mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+        
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+            const url = URL.createObjectURL(blob);
+            const ext = mimeSelect.options[mimeSelect.selectedIndex].dataset.ext;
+            
+            downloadBtn.href = url;
+            downloadBtn.download = `${fileNameInput.value.trim()}.${ext}`;
+            downloadBtn.innerHTML = `<i class="ph ph-download-simple"></i> Download ${ext.toUpperCase()} (${(blob.size/1024/1024).toFixed(2)} MB)`;
+            
+            progressOverlay.style.display = 'none';
+            downloadBtn.style.display = 'flex';
+            
+            videoPreview.pause();
+            videoPreview.muted = true;
+            videoPreview.currentTime = 0;
+            videoPreview.playbackRate = 1;
+            
+            // Close Audio Context if used
+            if(audioCtx && audioCtx.state !== 'closed') audioCtx.close();
+            audioCtx = null;
+        };
+
+        // 4. Start
+        videoPreview.muted = false; 
+        videoPreview.volume = 1.0; 
+        videoPreview.playbackRate = speed;
+        
+        mediaRecorder.start();
+        try { await videoPreview.play(); } catch(e) { 
+            console.error(e);
+            alert("Autoplay blocked. Click page interaction required.");
+        }
+        
+        if (drawLoop) drawLoop();
+
+        const interval = setInterval(() => {
+            if(videoPreview.paused || videoPreview.ended) {
+                clearInterval(interval);
+                if(mediaRecorder.state === 'recording') mediaRecorder.stop();
+            } else {
+                const pct = (videoPreview.currentTime / videoPreview.duration) * 100;
+                progressFill.style.width = `${pct}%`;
+                percentText.innerText = `${Math.round(pct)}%`;
+            }
+        }, 500);
+    }
+</script>
+</body>
+</html>
+
+
