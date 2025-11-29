@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TranslitMedia Compressor</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- JSZip for zipping -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- PDF-Lib for PDFs -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    
+    <style>
+        /* Custom Styles to match previous look */
+        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        input[type=range] { accent-color: #3b82f6; cursor: pointer; }
+    </style>
+</head>
+<body class="p-6 text-slate-800">
+
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-sm">
+        <h1 class="text-3xl font-bold text-center mb-1 text-slate-900">File Compressor</h1>
+        <p class="text-center text-slate-500 mb-8">Secure Client-Side Compression</p>
+
+        <!-- UPLOAD ZONE -->
+        <div onclick="document.getElementById('fileInput').click()" 
+             class="border-2 border-dashed border-slate-300 rounded-lg p-10 text-center bg-slate-50 hover:bg-blue-50 hover:border-blue-400 transition cursor-pointer mb-8">
+            <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.pdf" class="hidden" onchange="handleUpload(this.files)">
+            <p class="font-medium text-slate-600">Click to Select Files</p>
+            <p class="text-xs text-slate-400 mt-1">(Auto-uploads on selection)</p>
+        </div>
+
+        <!-- GLOBAL CONTROLS -->
+        <div class="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+            <div>
+                <div class="text-xs font-bold text-slate-500 uppercase mb-1">Global Quality: <span id="globalQVal">80</span></div>
+                <input type="range" min="10" max="100" value="80" class="w-full" oninput="updateGlobal('quality', this.value)">
+            </div>
+            <div>
+                <div class="text-xs font-bold text-slate-500 uppercase mb-1">Global Resize: <span id="globalRVal">100</span>%</div>
+                <input type="range" min="10" max="100" value="100" class="w-full" oninput="updateGlobal('resize', this.value)">
+            </div>
+        </div>
+
+        <!-- FILE LIST -->
+        <div id="fileList" class="flex flex-col gap-3"></div>
+
+        <!-- FOOTER -->
+        <div id="footerPanel" class="hidden mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Zip Filename</label>
+                <input type="text" id="zipName" value="batch_compressed" class="w-full p-3 border border-slate-300 rounded-md">
+            </div>
+            <button onclick="downloadZip()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-md transition w-full md:w-auto">
+                Download All as ZIP
+            </button>
+        </div>
+    </div>
+
+    <!-- ICONS -->
+    <svg style="display:none">
+        <symbol id="icon-compress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></symbol>
+    </svg>
+
+    <script>
+        let filesData = [];
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function handleUpload(files) {
+            if(files.length > 0) document.getElementById('footerPanel').classList.remove('hidden');
+            
+            Array.from(files).forEach(file => {
+                const id = Math.random().toString(36).substr(2, 9);
+                const nameParts = file.name.split('.');
+                const ext = nameParts.pop();
+                const baseName = nameParts.join('.');
+                
+                const fileObj = {
+                    id: id,
+                    originalFile: file,
+                    processedBlob: null,
+                    filename: file.name,
+                    suggestedName: `${baseName}_opt.${ext}`,
+                    quality: 80,
+                    resize: 100
+                };
+                
+                filesData.push(fileObj);
+                renderRow(fileObj);
+            });
+        }
+
+        function renderRow(file) {
+            const row = document.createElement('div');
+            row.id = `row-${file.id}`;
+            row.className = "grid grid-cols-[2fr_3fr_auto] gap-4 items-center p-3 bg-white border border-slate-200 rounded-lg shadow-sm";
+            row.innerHTML = `
+                <div class="min-w-0">
+                    <div class="font-semibold text-sm truncate" title="${file.filename}">${file.filename}</div>
+                    <div class="text-xs text-slate-500 bg-slate-100 inline-block px-1 rounded mt-1">${formatSize(file.originalFile.size)}</div>
+                    <input type="text" value="${file.suggestedName}" onchange="updateName('${file.id}', this.value)" class="w-full mt-2 text-xs p-1 border border-slate-300 rounded">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-500">QUAL <span id="q-val-${file.id}">${file.quality}</span></div>
+                        <input type="range" min="10" max="100" value="${file.quality}" class="w-full q-slider" oninput="updateSingle('${file.id}', 'quality', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-500">SIZE <span id="r-val-${file.id}">${file.resize}</span>%</div>
+                        <input type="range" min="10" max="100" value="${file.resize}" class="w-full r-slider" oninput="updateSingle('${file.id}', 'resize', this.value)">
+                    </div>
+                </div>
+
+                <div class="flex gap-1">
+                    <div id="badge-${file.id}" class="hidden text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full self-center mr-1"></div>
+                    
+                    <button onclick="compressSingle('${file.id}')" id="btn-c-${file.id}" class="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded transition">
+                        <svg class="w-4 h-4"><use href="#icon-compress"></use></svg>
+                    </button>
+                    
+                    <button onclick="downloadSingle('${file.id}')" id="btn-d-${file.id}" class="hidden w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded transition">
+                        <svg class="w-4 h-4"><use href="#icon-download"></use></svg>
+                    </button>
+                    
+                    <button onclick="removeFile('${file.id}')" class="w-8 h-8 flex items-center justify-center bg-white border border-red-200 hover:bg-red-50 text-red-500 rounded transition">
+                        <svg class="w-4 h-4"><use href="#icon-trash"></use></svg>
+                    </button>
+                </div>
+            `;
+            document.getElementById('fileList').appendChild(row);
+        }
+
+        function updateSingle(id, type, val) {
+            const file = filesData.find(f => f.id === id);
+            if (file) {
+                file[type] = parseInt(val);
+                document.getElementById(type === 'quality' ? `q-val-${id}` : `r-val-${id}`).innerText = val;
+            }
+        }
+
+        function updateGlobal(type, val) {
+            document.getElementById(type === 'quality' ? 'globalQVal' : 'globalRVal').innerText = val;
+            const sliders = document.querySelectorAll(type === 'quality' ? '.q-slider' : '.r-slider');
+            sliders.forEach(s => {
+                s.value = val;
+                s.dispatchEvent(new Event('input')); // Trigger single update
+            });
+        }
+
+        function updateName(id, val) {
+            const file = filesData.find(f => f.id === id);
+            if(file) file.suggestedName = val;
+        }
+
+        async function compressLogic(fileObj) {
+            // Check if PDF
+            if(fileObj.originalFile.type === 'application/pdf') {
+                const arrayBuffer = await fileObj.originalFile.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                // PDF-Lib save performs basic structural optimization
+                const pdfBytes = await pdfDoc.save(); 
+                return new Blob([pdfBytes], { type: 'application/pdf' });
+            }
+
+            // Image Compression
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = URL.createObjectURL(fileObj.originalFile);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width;
+                    let h = img.height;
+                    
+                    // Resize
+                    if (fileObj.resize < 100) {
+                        w = w * (fileObj.resize / 100);
+                        h = h * (fileObj.resize / 100);
+                    }
+                    
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    // Format
+                    const mime = fileObj.originalFile.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                    
+                    canvas.toBlob((blob) => {
+                        resolve(blob);
+                    }, mime, fileObj.quality / 100);
+                };
+            });
+        }
+
+        async function compressSingle(id) {
+            const file = filesData.find(f => f.id === id);
+            const btn = document.getElementById(`btn-c-${id}`);
+            const dlBtn = document.getElementById(`btn-d-${id}`);
+            const badge = document.getElementById(`badge-${id}`);
+
+            btn.innerHTML = '<div class="spinner"></div>';
+            
+            try {
+                file.processedBlob = await compressLogic(file);
+                
+                // Calc stats
+                const orig = file.originalFile.size;
+                const newS = file.processedBlob.size;
+                const pct = Math.round((1 - (newS / orig)) * 100);
+                
+                badge.innerText = `${formatSize(newS)} (-${pct}%)`;
+                badge.classList.remove('hidden');
+                dlBtn.classList.remove('hidden');
+                btn.innerHTML = '<svg class="w-4 h-4"><use href="#icon-compress"></use></svg>'; // Reset icon
+            } catch(e) {
+                console.error(e);
+                alert("Error compressing file");
+            }
+        }
+
+        function downloadSingle(id) {
+            const file = filesData.find(f => f.id === id);
+            if (!file || !file.processedBlob) return;
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(file.processedBlob);
+            link.download = file.suggestedName;
+            link.click();
+        }
+
+        function removeFile(id) {
+            filesData = filesData.filter(f => f.id !== id);
+            document.getElementById(`row-${id}`).remove();
+            if(filesData.length === 0) document.getElementById('footerPanel').classList.add('hidden');
+        }
+
+        async function downloadZip() {
+            const zip = new JSZip();
+            const btn = document.querySelector('button[onclick="downloadZip()"]');
+            btn.innerHTML = "Compressing & Zipping...";
+            
+            for (const file of filesData) {
+                // If not compressed yet, compress now
+                if (!file.processedBlob) {
+                    file.processedBlob = await compressLogic(file);
+                }
+                zip.file(file.suggestedName, file.processedBlob);
+            }
+            
+            const zipNameInput = document.getElementById('zipName').value.trim() || "files";
+            const content = await zip.generateAsync({type:"blob"});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `${zipNameInput}.zip`;
+            link.click();
+            
+            btn.innerHTML = "Download All as ZIP";
+        }
+    </script>
+</body>
+</html>
+
