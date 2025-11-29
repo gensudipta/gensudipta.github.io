@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Image Converter - Translit Media</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Header & Nav */
+        .header { margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        h1 { margin: 0 0 5px 0; font-size: 1.5rem; color: #1e293b; }
+        .subtitle { font-size: 0.9rem; color: #64748b; }
+        
+        .nav-btn {
+            background: none; border: none; color: #64748b; 
+            cursor: pointer; font-size: 0.9rem; margin-bottom: 15px;
+            display: inline-flex; align-items: center; gap: 5px; padding: 0;
+        }
+        .nav-btn:hover { color: var(--primary); text-decoration: underline; }
+
+        /* Inputs */
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #f1f5f9;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover { border-color: var(--primary); background: #e0e7ff; }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 500px) { .control-group { grid-template-columns: 1fr; } }
+
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box; /* Important for padding */
+        }
+
+        button.primary-btn {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.primary-btn:hover { background-color: #4338ca; }
+
+        /* Preview Section */
+        #preview-section {
+            display: none;
+            margin-top: 25px;
+            border-top: 1px solid var(--border);
+            padding-top: 25px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .preview-wrapper {
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        #preview-img { max-width: 100%; height: auto; max-height: 300px; }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-download { background-color: #10b981; color: white; }
+        .btn-pdf { background-color: #ef4444; color: white; }
+
+        /* Limitations Box */
+        .limitations-box {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #94a3b8;
+        }
+        .limitations-box strong { display: block; margin-bottom: 5px; color: #334155; }
+        .limitations-box ul { margin: 5px 0 0 0; padding-left: 20px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #preview-img { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="nav-btn" onclick="window.history.back()">← Go Back</button>
+
+    <div class="header">
+        <h1>Translit Media Converter</h1>
+        <div class="subtitle">Offline • Secure • Multi-Format</div>
+    </div>
+
+    <!-- 1. Upload -->
+    <label class="upload-area" id="drop-zone">
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <span style="font-size: 2rem;">📂</span>
+        <div id="upload-text">Click to Select or Drop Image Here</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">Supports: PNG, JPG, BMP, WEBP, SVG</div>
+    </label>
+
+    <!-- 2. Settings -->
+    <div class="control-group">
+        <div>
+            <label for="fileNameInput">Save As (Rename):</label>
+            <input type="text" id="fileNameInput" placeholder="filename">
+        </div>
+        <div>
+            <label for="formatSelect">Target Format:</label>
+            <select id="formatSelect">
+                <option value="image/png">PNG (.png) - Lossless</option>
+                <option value="image/jpeg">JPG / JPEG (.jpg) - Compressed</option>
+                <option value="image/webp">WEBP (.webp) - Modern Web</option>
+                <option value="image/bmp">BMP (.bmp) - Windows Bitmap</option>
+                <option value="image/x-icon">ICO (.ico) - Icon / Favicon</option>
+            </select>
+        </div>
+    </div>
+
+    <button class="primary-btn" onclick="processImage()">Convert Image</button>
+
+    <!-- 3. Output -->
+    <div id="preview-section">
+        <div class="info-grid">
+            <div><strong>Original Size:</strong> <span id="meta-original">-</span></div>
+            <div><strong>Output Size:</strong> <span id="meta-output">-</span></div>
+            <div><strong>Format:</strong> <span id="meta-format">-</span></div>
+        </div>
+
+        <div class="preview-wrapper">
+            <img id="preview-img" alt="Preview">
+        </div>
+
+        <div class="btn-group">
+            <button onclick="downloadFile()" class="action-btn btn-download">⬇ Download File</button>
+            <button onclick="window.print()" class="action-btn btn-pdf">📄 Print / Save PDF</button>
+        </div>
+    </div>
+
+    <!-- 4. Limitations Disclaimer -->
+    <div class="limitations-box">
+        <strong>⚠ Outbound Conversion Limitations</strong>
+        <ul>
+            <li><strong>Browser Memory:</strong> Conversion happens entirely in your RAM. Very large images (4k+) may crash the browser tab on mobile devices.</li>
+            <li><strong>Transparency:</strong> Converting transparent images to JPG or BMP will result in a black or white background.</li>
+            <li><strong>ICO Restrictions:</strong> ICO files are automatically resized to max 64x64 pixels to ensure compatibility.</li>
+            <li><strong>One-Way:</strong> This is a conversion tool, not an editor. Quality is determined by the output format standards.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // --- Elements ---
+    const fileInput = document.getElementById('fileInput');
+    const uploadText = document.getElementById('upload-text');
+    const dropZone = document.getElementById('drop-zone');
+    const fileNameInput = document.getElementById('fileNameInput');
+    const formatSelect = document.getElementById('formatSelect');
+    const previewSection = document.getElementById('preview-section');
+    const previewImg = document.getElementById('preview-img');
+
+    // Meta elements
+    const metaOriginal = document.getElementById('meta-original');
+    const metaOutput = document.getElementById('meta-output');
+    const metaFormat = document.getElementById('meta-format');
+
+    // State
+    let originalImage = new Image();
+    let currentBlob = null;
+    let fileExtension = 'png';
+
+    // --- Event Listeners ---
+    fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
+    
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#4f46e5'; });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.borderColor = '#cbd5e1'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd5e1';
+        if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+
+    // --- Logic ---
+
+    function loadFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
+
+        // Auto-fill filename (remove extension)
+        const nameParts = file.name.split('.');
+        nameParts.pop(); 
+        fileNameInput.value = nameParts.join('.');
+        uploadText.innerText = "Selected: " + file.name;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            originalImage.src = e.target.result;
+            // Wait for image to load to get dimensions
+            originalImage.onload = () => {
+                metaOriginal.innerText = `${originalImage.width} x ${originalImage.height} px`;
+                previewSection.style.display = 'none'; // Hide old preview
+            };
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function processImage() {
+        if (!originalImage.src) { alert("Please upload an image first."); return; }
+
+        const format = formatSelect.value;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = originalImage.width;
+        let height = originalImage.height;
+
+        // Special handling for ICO (Favicons)
+        if (format === 'image/x-icon') {
+            if (width > 64 || height > 64) {
+                const ratio = Math.min(64 / width, 64 / height);
+                width = Math.floor(width * ratio);
+                height = Math.floor(height * ratio);
+            }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Handle Backgrounds
+        if (format === 'image/jpeg' || format === 'image/bmp') {
+            ctx.fillStyle = "#FFFFFF"; // Fill white for non-transparent formats
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        ctx.drawImage(originalImage, 0, 0, width, height);
+
+        // Convert
+        try {
+            if (format === 'image/bmp') {
+                currentBlob = await canvasToBMP(canvas);
+                fileExtension = 'bmp';
+            } else if (format === 'image/x-icon') {
+                currentBlob = await canvasToICO(canvas);
+                fileExtension = 'ico';
+            } else {
+                const dataUrl = canvas.toDataURL(format, 0.92);
+                const res = await fetch(dataUrl);
+                currentBlob = await res.blob();
+                
+                // Handle extension variants
+                if (format === 'image/jpeg') {
+                    fileExtension = 'jpg';
+                } else {
+                    fileExtension = format.split('/')[1];
+                }
+            }
+
+            // Update UI
+            const url = URL.createObjectURL(currentBlob);
+            previewImg.src = url;
+            metaOutput.innerText = `${width} x ${height} px`;
+            metaFormat.innerText = fileExtension.toUpperCase();
+            previewSection.style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+            alert("Error during conversion. The image might be too large for this browser.");
+        }
+    }
+
+    function downloadFile() {
+        if (!currentBlob) return;
+        
+        let filename = fileNameInput.value.trim() || "converted-image";
+        // Sanitize filename
+        filename = filename.replace(/[^a-z0-9_\-\s]/gi, '_');
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(currentBlob);
+        link.download = `${filename}.${fileExtension}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- Custom Encoders (Embedded for single-file offline use) ---
+    
+    // BMP Encoder
+    function canvasToBMP(canvas) {
+        const w = canvas.width, h = canvas.height;
+        const data = canvas.getContext('2d').getImageData(0,0,w,h).data;
+        const fileSize = 54 + w*h*4;
+        const buf = new ArrayBuffer(fileSize);
+        const v = new DataView(buf);
+        
+        // Header
+        v.setUint16(0,0x4D42,true); v.setUint32(2,fileSize,true); v.setUint32(10,54,true);
+        v.setUint32(14,40,true); v.setInt32(18,w,true); v.setInt32(22,-h,true);
+        v.setUint16(26,1,true); v.setUint16(28,32,true);
+        
+        let p = 54;
+        for(let i=0; i<data.length; i+=4) {
+            v.setUint8(p++, data[i+2]); v.setUint8(p++, data[i+1]);
+            v.setUint8(p++, data[i]); v.setUint8(p++, data[i+3]);
+        }
+        return new Blob([buf], {type:"image/bmp"});
+    }
+
+    // ICO Encoder
+    function canvasToICO(canvas) {
+        const w = canvas.width, h = canvas.height;
+        const data = canvas.getContext('2d').getImageData(0,0,w,h).data;
+        const bmpSize = 40 + w*h*4;
+        const buf = new ArrayBuffer(22 + bmpSize);
+        const v = new DataView(buf);
+        
+        v.setUint16(0,0,true); v.setUint16(2,1,true); v.setUint16(4,1,true);
+        v.setUint8(6,w>=256?0:w); v.setUint8(7,h>=256?0:h); v.setUint16(10,1,true); v.setUint16(12,32,true);
+        v.setUint32(14,bmpSize,true); v.setUint32(18,22,true);
+        
+        let p = 22;
+        v.setUint32(p,40,true); v.setInt32(p+4,w,true); v.setInt32(p+8,h*2,true);
+        v.setUint16(p+12,1,true); v.setUint16(p+14,32,true);
+        
+        p += 40;
+        for(let y=h-1; y>=0; y--) {
+            for(let x=0; x<w; x++) {
+                let i=(y*w+x)*4;
+                v.setUint8(p++, data[i+2]); v.setUint8(p++, data[i+1]);
+                v.setUint8(p++, data[i]); v.setUint8(p++, data[i+3]);
+            }
+        }
+        return new Blob([buf], {type:"image/x-icon"});
+    }
+</script>
+
+</body>
+</html>
+
+
