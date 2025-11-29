@@ -20,6 +20,7 @@
             --border: #e5e7eb;
             --success: #10b981;
             --error: #ef4444;
+            --disabled: #94a3b8;
         }
 
         body {
@@ -65,12 +66,25 @@
 
         /* Settings Bar */
         .settings-bar {
-            display: flex; flex-direction: column; gap: 10px; 
+            display: flex; flex-direction: column; gap: 15px; 
             background: #fff1f2; padding: 15px;
             border-radius: 10px; margin-bottom: 20px;
         }
+        
+        .settings-row {
+            display: flex; gap: 15px; flex-wrap: wrap;
+        }
+
+        .setting-group { flex: 1; min-width: 140px; }
         .setting-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #831843; }
-        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #fda4af; font-size: 1rem; background: white; }
+        
+        select { 
+            width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #fda4af; 
+            font-size: 1rem; background: white; transition: 0.2s;
+        }
+        select:disabled {
+            background: #e2e8f0; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;
+        }
         
         /* Drop Zone */
         .drop-zone {
@@ -84,16 +98,10 @@
         .file-list { list-style: none; padding: 0; margin: 0; }
         
         .file-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #fff; 
-            border: 1px solid var(--border);
-            padding: 12px; 
-            margin-bottom: 10px; 
-            border-radius: 8px; 
-            position: relative;
-            overflow: hidden;
+            display: flex; align-items: center; gap: 12px;
+            background: #fff; border: 1px solid var(--border);
+            padding: 12px; margin-bottom: 10px; border-radius: 8px; 
+            position: relative; overflow: hidden;
         }
 
         .file-icon { font-size: 1.5rem; flex-shrink: 0; }
@@ -145,7 +153,7 @@
 
         @media(min-width: 600px) {
             .container { padding: 2rem; }
-            .settings-bar { flex-direction: row; align-items: flex-end; }
+            .settings-bar { padding: 20px; }
             .actions { flex-direction: row; }
         }
     </style>
@@ -164,23 +172,34 @@
     </div>
 
     <div class="settings-bar">
-        <div class="setting-group" style="flex: 1;">
-            <label>Output Format</label>
-            <select id="formatSelect">
-                <option value="mp3">MP3 (Universal)</option>
-                <option value="wav">WAV (Lossless)</option>
-                <option value="ogg">OGG (Opus Codec)</option>
-                <option value="aac">AAC / M4A (Apple)</option>
-                <option value="webm">WebM (Web Audio)</option>
-            </select>
+        <div class="settings-row">
+            <div class="setting-group">
+                <label>Output Format</label>
+                <select id="formatSelect">
+                    <option value="mp3">MP3 (Universal)</option>
+                    <option value="wav">WAV (Lossless)</option>
+                    <option value="ogg">OGG (Opus Codec)</option>
+                    <option value="aac">AAC / M4A (Apple)</option>
+                    <option value="webm">WebM (Web Audio)</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label id="bitrateLabel">Quality (Bitrate)</label>
+                <select id="bitrateSelect">
+                    <option value="64">64 kbps (Low Size)</option>
+                    <option value="128" selected>128 kbps (Standard)</option>
+                    <option value="192">192 kbps (High)</option>
+                    <option value="256">256 kbps (Very High)</option>
+                    <option value="320">320 kbps (Maximum)</option>
+                </select>
+            </div>
         </div>
-        <div class="setting-group" style="flex: 2; font-size: 0.8rem; color: #64748b;">
-            Add multiple files. Works offline on your device.
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: -5px;" id="hintText">
+            Select bitrate for MP3, OGG, and AAC.
         </div>
     </div>
 
     <label class="drop-zone" id="dropZone">
-        <!-- Added multiple attribute explicitly and click handler -->
         <input type="file" id="fileInput" accept="audio/*,video/*" multiple style="display: none;">
         <div style="font-size: 2rem; margin-bottom: 10px;">📂</div>
         <strong>Select Files (Multi-Select Supported)</strong>
@@ -202,6 +221,12 @@
     const libText = document.getElementById('libText');
     const convertBtn = document.getElementById('convertBtn');
     
+    // --- Settings UI Elements ---
+    const formatSelect = document.getElementById('formatSelect');
+    const bitrateSelect = document.getElementById('bitrateSelect');
+    const bitrateLabel = document.getElementById('bitrateLabel');
+    const hintText = document.getElementById('hintText');
+
     window.onload = function() {
         if (typeof lamejs !== 'undefined' && typeof JSZip !== 'undefined') {
             libDot.classList.add('ready');
@@ -210,7 +235,24 @@
             libDot.style.background = 'orange';
             libText.innerText = "Offline Mode (No MP3)";
         }
+        updateBitrateVisibility(); // Initialize state
     };
+
+    // --- Dynamic UI Logic ---
+    formatSelect.addEventListener('change', updateBitrateVisibility);
+
+    function updateBitrateVisibility() {
+        const format = formatSelect.value;
+        if (format === 'wav') {
+            bitrateSelect.disabled = true;
+            bitrateLabel.style.color = '#94a3b8';
+            hintText.innerText = "WAV is a Lossless format (Bitrate setting ignored).";
+        } else {
+            bitrateSelect.disabled = false;
+            bitrateLabel.style.color = '#831843';
+            hintText.innerText = `Select bitrate for ${format.toUpperCase()}.`;
+        }
+    }
 
     // --- State ---
     let fileQueue = [];
@@ -239,9 +281,7 @@
             renderRow(item);
         });
         
-        // CRITICAL FIX: Reset input value to allow re-selecting the same files or adding more
         fileInput.value = '';
-        
         zipBtn.style.display = 'none';
         convertBtn.disabled = false;
         convertBtn.innerText = "Start Conversion";
@@ -284,7 +324,6 @@
         fileList.innerHTML = '';
         zipBtn.style.display = 'none';
         convertBtn.disabled = false;
-        // Also reset input just in case
         fileInput.value = '';
     }
 
@@ -293,7 +332,9 @@
         if(fileQueue.length === 0) return alert("Select files first.");
         
         convertBtn.disabled = true;
-        const format = document.getElementById('formatSelect').value;
+        const format = formatSelect.value;
+        const bitrate = parseInt(bitrateSelect.value);
+        
         let successCount = 0;
 
         for (let i = 0; i < fileQueue.length; i++) {
@@ -309,47 +350,38 @@
             progressEl.style.width = "40%";
 
             try {
-                // Decode
                 const arrayBuffer = await item.file.arrayBuffer();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 
-                await new Promise(r => setTimeout(r, 20)); // UI Breath
+                await new Promise(r => setTimeout(r, 20));
 
-                // Encode
                 let blob, ext = format;
                 
                 if (format === 'mp3') {
                     if (typeof lamejs === 'undefined') throw new Error("LAME.js missing");
-                    blob = encodeMP3(audioBuffer);
+                    blob = encodeMP3(audioBuffer, bitrate);
                 } else if (format === 'wav') {
                     blob = encodeWAV(audioBuffer);
                 } else if (format === 'aac') {
-                    // Try M4A, fallback to MP3
                     if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                        blob = await encodeMediaRecorder(audioBuffer, 'audio/mp4');
+                        blob = await encodeMediaRecorder(audioBuffer, 'audio/mp4', bitrate);
                         ext = 'm4a';
                     } else {
-                        blob = encodeMP3(audioBuffer); 
+                        blob = encodeMP3(audioBuffer, bitrate); 
                         ext = 'mp3';
                     }
                 } else if (format === 'ogg') {
-                    // Try Native OGG (Firefox), else WebM (Chrome)
                     if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
-                        blob = await encodeMediaRecorder(audioBuffer, 'audio/ogg; codecs=opus');
+                        blob = await encodeMediaRecorder(audioBuffer, 'audio/ogg; codecs=opus', bitrate);
                     } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-                         blob = await encodeMediaRecorder(audioBuffer, 'audio/ogg');
+                         blob = await encodeMediaRecorder(audioBuffer, 'audio/ogg', bitrate);
                     } else {
-                        // Chrome doesn't support Ogg container encoding, only WebM
-                        // We record as WebM but the file is typically Opus
-                        blob = await encodeMediaRecorder(audioBuffer, 'audio/webm; codecs=opus');
-                        // Note: extension stays .ogg as user requested, though container is WebM.
-                        // Most players handle this fine.
+                        blob = await encodeMediaRecorder(audioBuffer, 'audio/webm; codecs=opus', bitrate);
                     }
                 } else {
-                    blob = await encodeMediaRecorder(audioBuffer, 'audio/webm');
+                    blob = await encodeMediaRecorder(audioBuffer, 'audio/webm', bitrate);
                 }
 
-                // Success
                 item.blob = blob;
                 item.status = 'done';
                 item.finalExt = ext;
@@ -358,7 +390,6 @@
                 statusEl.innerText = "Done";
                 statusEl.style.color = "var(--success)";
                 
-                // Replace X button with Download
                 const actionBtn = row.querySelector('.action-btn');
                 const url = URL.createObjectURL(blob);
                 
@@ -377,7 +408,7 @@
 
             } catch (e) {
                 console.error(e);
-                item.status = 'error';
+                item.status = 'Error';
                 statusEl.innerText = "Failed";
                 statusEl.style.color = "var(--error)";
                 progressEl.style.background = "var(--error)";
@@ -408,10 +439,11 @@
         });
     }
 
+
     // --- Encoders ---
-    function encodeMP3(buffer) {
+    function encodeMP3(buffer, bitrate) {
         const channels = buffer.numberOfChannels, rate = buffer.sampleRate;
-        const mp3encoder = new lamejs.Mp3Encoder(channels, rate, 128);
+        const mp3encoder = new lamejs.Mp3Encoder(channels, rate, bitrate || 128);
         const left = floatTo16BitPCM(buffer.getChannelData(0));
         const right = channels > 1 ? floatTo16BitPCM(buffer.getChannelData(1)) : left;
         const blockSize = 1152, mp3Data = [];
@@ -458,7 +490,7 @@
         return new Blob([buffer], { type: 'audio/wav' });
     }
 
-    function encodeMediaRecorder(audioBuffer, mimeType) {
+    function encodeMediaRecorder(audioBuffer, mimeType, bitrate) {
         return new Promise((resolve) => {
             const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, audioBuffer.length, audioBuffer.sampleRate);
             const source = offlineCtx.createBufferSource();
@@ -466,7 +498,11 @@
             const dest = offlineCtx.createMediaStreamDestination();
             source.connect(dest);
             source.start(0);
-            const recorder = new MediaRecorder(dest.stream, { mimeType: mimeType });
+            
+            const options = { mimeType: mimeType };
+            if(bitrate) options.audioBitsPerSecond = bitrate * 1000;
+
+            const recorder = new MediaRecorder(dest.stream, options);
             const chunks = [];
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
@@ -479,3 +515,4 @@
 </html>
 
 
+           
