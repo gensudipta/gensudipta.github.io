@@ -170,6 +170,21 @@
             if(fileObj.originalFile.type === 'application/pdf') {
                 const arrayBuffer = await fileObj.originalFile.arrayBuffer();
                 const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                
+                // --- PDF RESIZING LOGIC ---
+                if (fileObj.resize < 100) {
+                    const scale = fileObj.resize / 100;
+                    const pages = pdfDoc.getPages();
+                    
+                    pages.forEach(page => {
+                        const { width, height } = page.getSize();
+                        // Scale content
+                        page.scale(scale, scale);
+                        // Update page dimensions
+                        page.setSize(width * scale, height * scale);
+                    });
+                }
+                
                 // PDF-Lib save performs basic structural optimization
                 const pdfBytes = await pdfDoc.save(); 
                 return new Blob([pdfBytes], { type: 'application/pdf' });
@@ -273,4 +288,5 @@
     </script>
 </body>
 </html>
+
 
