@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions - TranslitMedia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: #cbd5e1; }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-6">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- Smart Back Button -->
+        <button onclick="goBack()" class="inline-flex items-center gap-2 text-blue-400 hover:text-white mb-8 transition font-medium text-sm bg-transparent border-0 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Go Back
+        </button>
+
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-10 shadow-xl">
+            <h1 class="text-3xl font-bold text-white mb-2">Terms & Conditions</h1>
+            <p class="text-slate-500 mb-8 text-sm">Effective Date: <span id="date"></span></p>
+
+            <div class="space-y-8">
+                <!-- Section 1 -->
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">1. Usage License</h2>
+                    <p class="leading-relaxed mb-4">
+                        All tools provided on TranslitMedia are <strong>free for personal and non-commercial use</strong>. You are granted a limited, non-exclusive, revocable license to use our utilities for your own personal purposes.
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-400 text-sm">
+                        <li>You may use generated files for personal projects.</li>
+                        <li>You may not sell access to our tools.</li>
+                        <li>You may not reverse engineer our source code.</li>
+                    </ul>
+                </section>
+
+                <!-- Section 2 -->
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">2. Copyright & Content Ownership</h2>
+                    <p class="leading-relaxed">
+                        TranslitMedia does <strong>not</strong> claim ownership over any files, images, or text you upload or process using our tools.
+                    </p>
+                    <p class="leading-relaxed mt-2">
+                        <span class="text-blue-400 font-bold">Your Content Remains Yours:</span> Our processing does not transfer copyright. It is not our intention to subject your user-generated content to our copyright. You retain full rights to the original and processed files. You are solely responsible for ensuring you have the right to modify any files you upload.
+                    </p>
+                </section>
+
+                <!-- Section 3 -->
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">3. Disclaimer of Warranties</h2>
+                    <p class="leading-relaxed">
+                        The services are provided on an "AS IS" and "AS AVAILABLE" basis. TranslitMedia makes no warranties, expressed or implied, regarding the reliability, accuracy, or completeness of the tools. We do not guarantee that the service will be uninterrupted or error-free.
+                    </p>
+                </section>
+
+                <!-- Section 4 -->
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">4. Limitation of Liability</h2>
+                    <p class="leading-relaxed">
+                        In no event shall TranslitMedia be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on TranslitMedia's website.
+                    </p>
+                </section>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-slate-700 text-center">
+                <p class="text-sm text-slate-500">By using this site, you agree to these terms.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const date = new Date();
+        document.getElementById('date').innerText = date.toLocaleDateString();
+
+        function goBack() {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
+
+
