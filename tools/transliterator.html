@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BharatScribe - Universal Converter</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQmhhcmF0U2NyaWJlIiwiZGVzY3JpcHRpb24iOiJPZmZsaW5lIEluZGljIFRyYW5zbGl0ZXJhdG9yIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiM0ZjQ2ZTUifQ==">
+    <meta name="theme-color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&family=Noto+Sans+Devanagari&family=Noto+Sans+Gurmukhi&family=Noto+Sans+Gujarati&family=Noto+Sans+Kannada&family=Noto+Sans+Malayalam&family=Noto+Sans+Oriya&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Nastaliq+Urdu&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .indic-font { font-family: 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gurmukhi', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Tamil', 'Noto Sans Telugu', sans-serif; }
+        .urdu-font { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2; font-size: 1.4em; }
+        .rtl-text { direction: rtl; text-align: right; }
+        
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f8fafc; }
+        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-online { background-color: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
+        .status-offline { background-color: #ef4444; box-shadow: 0 0 0 2px #fee2e2; }
+
+        /* Rotate animation for swap */
+        .rotate-anim { animation: spin 0.3s ease-in-out; }
+        @keyframes spin { 100% { transform: rotate(180deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 selection:bg-indigo-100 selection:text-indigo-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="window.history.back()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Go Back">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 leading-tight">BharatScribe</h1>
+                        <div id="networkStatus" class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider flex items-center">
+                            <span class="status-dot status-online"></span>Online
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="hidden md:flex flex-col items-end">
+                <span class="text-sm font-semibold text-slate-700">Universal Converter</span>
+                <span class="text-xs text-slate-500">Phonetic & Script-to-Script</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Panel: Input & Controls -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- Language Selectors with SWAP -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between">
+                    
+                    <!-- Source Selector -->
+                    <div class="w-full sm:flex-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Input Language</label>
+                        <div class="relative h-[50px]">
+                            <select id="sourceLang" class="w-full h-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-sm appearance-none cursor-pointer hover:border-indigo-300">
+                                <option value="en">English (Phonetic)</option>
+                                <optgroup label="Devanagari Scripts">
+                                    <option value="hi">Hindi (हिंदी)</option>
+                                    <option value="mr">Marathi (मराठी)</option>
+                                    <option value="ne">Nepali (नेपाली)</option>
+                                    <option value="sa">Sanskrit (संस्कृत)</option>
+                                </optgroup>
+                                <optgroup label="Other Indic Scripts">
+                                    <option value="bn">Bengali (বাংলা)</option>
+                                    <option value="pa">Punjabi (પંજાબી)</option>
+                                    <option value="gu">Gujarati (ગુજરાતી)</option>
+                                    <option value="or">Odia (ଓଡ଼ିଆ)</option>
+                                    <option value="ta">Tamil (தமிழ்)</option>
+                                    <option value="te">Telugu (తెలుగు)</option>
+                                    <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                    <option value="ml">Malayalam (മലയാളം)</option>
+                                </optgroup>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div class="pb-1">
+                        <button id="swapBtn" class="p-3 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-800 transition-all border border-indigo-200 shadow-sm group" title="Swap Languages">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Target Selector -->
+                    <div class="w-full sm:flex-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Output Language</label>
+                        <div class="relative h-[50px]">
+                            <select id="targetLang" class="w-full h-full p-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-800 shadow-sm appearance-none cursor-pointer hover:border-indigo-300">
+                                <optgroup label="Devanagari Scripts">
+                                    <option value="hi">Hindi (हिंदी)</option>
+                                    <option value="mr">Marathi (मराठी)</option>
+                                    <option value="ne">Nepali (नेपाली)</option>
+                                    <option value="kok">Konkani (कोंकणी)</option>
+                                    <option value="sa">Sanskrit (संस्कृत)</option>
+                                    <option value="brx">Bodo (बड़ो)</option>
+                                    <option value="doi">Dogri (डोगरी)</option>
+                                    <option value="mai">Maithili (मैथिली)</option>
+                                    <option value="sd-dev">Sindhi (सिंधी)</option>
+                                    <option value="ks-dev">Kashmiri (कॉशुर)</option>
+                                </optgroup>
+                                <optgroup label="Bengali Script Group">
+                                    <option value="bn">Bengali (বাংলা)</option>
+                                    <option value="as">Assamese (অসমীয়া)</option>
+                                    <option value="mni">Manipuri (মৈতৈলোন্)</option>
+                                </optgroup>
+                                <optgroup label="South Indian Scripts">
+                                    <option value="ta">Tamil (தமிழ்)</option>
+                                    <option value="te">Telugu (తెలుగు)</option>
+                                    <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                    <option value="ml">Malayalam (മലയാളം)</option>
+                                </optgroup>
+                                <optgroup label="Other Scripts">
+                                    <option value="gu">Gujarati (ગુજરાતી)</option>
+                                    <option value="pa">Punjabi (પંજાબી)</option>
+                                    <option value="or">Odia (ଓଡ଼ିଆ)</option>
+                                </optgroup>
+                                <optgroup label="Target Only">
+                                    <option value="en">English (Phonetic)</option>
+                                    <option value="ur">Urdu (اردو)</option>
+                                    <option value="sd">Sindhi (سنڌي)</option>
+                                    <option value="ks">Kashmiri (کأشُر)</option>
+                                </optgroup>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input/Output Areas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Source -->
+                    <div class="flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-2 px-1">
+                            <span id="labelInputArea" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Input</span>
+                            <button id="clearBtn" class="text-xs text-slate-400 hover:text-red-500 transition-colors">Clear</button>
+                        </div>
+                        <div class="relative group flex-1">
+                            <textarea id="sourceInput" placeholder="Start typing..." class="w-full h-80 p-5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all text-lg leading-relaxed shadow-sm font-mono text-slate-700"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Target -->
+                    <div class="flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-2 px-1">
+                            <span id="labelOutputArea" class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Output</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold opacity-0 transition-opacity" id="liveBadge">LIVE</span>
+                        </div>
+                        <div class="relative group flex-1">
+                            <textarea id="targetOutput" placeholder="Output is editable..." class="w-full h-80 p-5 rounded-xl border border-slate-300 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none resize-none transition-all text-2xl leading-loose indic-font shadow-inner text-slate-800"></textarea>
+                            
+                            <!-- Copy Button -->
+                            <button id="copyBtn" class="absolute top-3 right-3 bg-white/90 backdrop-blur p-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm opacity-60 hover:opacity-100" title="Copy to Clipboard">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: History -->
+            <div class="lg:col-span-4">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 h-full max-h-[calc(100vh-140px)] flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            History
+                        </h3>
+                        <button id="clearHistoryBtn" class="text-xs text-red-500 hover:text-red-700 hover:underline">Clear</button>
+                    </div>
+                    
+                    <div id="historyList" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/30">
+                        <div class="text-center p-8 text-slate-400 text-xs">History is empty</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-xl text-sm font-medium opacity-0 pointer-events-none transition-all duration-300 translate-y-4 z-50 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><polyline points="20 6 9 17 4 12"/></svg>
+        Copied to clipboard
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- OFFLINE SERVICE WORKER ---
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'bharat-scribe-v5';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                        e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['https://cdn.tailwindcss.com','https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&family=Noto+Sans+Devanagari&family=Noto+Sans+Gurmukhi&family=Noto+Sans+Gujarati&family=Noto+Sans+Kannada&family=Noto+Sans+Malayalam&family=Noto+Sans+Oriya&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Nastaliq+Urdu&family=Inter:wght@300;400;600&display=swap'])));
+                    });
+                    self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+                    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(console.error);
+            }
+
+            // --- NETWORK STATUS ---
+            const networkStatusEl = document.getElementById('networkStatus');
+            function updateNetwork() {
+                const cls = navigator.onLine ? 'status-online' : 'status-offline';
+                const txt = navigator.onLine ? 'Online' : 'Offline';
+                const col = navigator.onLine ? 'text-emerald-600' : 'text-slate-500';
+                networkStatusEl.innerHTML = `<span class="status-dot ${cls}"></span>${txt}`;
+                networkStatusEl.className = `text-[10px] font-semibold ${col} uppercase tracking-wider flex items-center`;
+            }
+            window.addEventListener('online', updateNetwork);
+            window.addEventListener('offline', updateNetwork);
+            updateNetwork();
+
+            // --- DATA & MAPPINGS ---
+            const v = { 'a':'अ', 'aa':'आ', 'i':'इ', 'ii':'ई', 'u':'उ', 'uu':'ऊ', 'e':'ए', 'ai':'ऐ', 'o':'ओ', 'au':'औ', 'an':'अं', 'ah':'अः', 'r':'ऋ' };
+            const m = { 'a':'', 'aa':'ा', 'i':'ि', 'ii':'ी', 'u':'ु', 'uu':'ू', 'e':'े', 'ai':'ै', 'o':'ो', 'au':'ौ', 'an':'ं', 'ah':'ः', 'r':'ृ' }; 
+            const c = { 
+                'k':'क', 'kh':'ख', 'g':'ग', 'gh':'घ', 'ng':'ङ', 'ch':'च', 'chh':'छ', 'j':'ज', 'jh':'झ', 'ny':'ञ',
+                't':'ट', 'th':'ठ', 'd':'ड', 'dh':'ढ', 'n':'ण', 'T':'त', 'Th':'थ', 'D':'द', 'Dh':'ध', 'N':'न',
+                'p':'प', 'ph':'फ', 'b':'ब', 'bh':'भ', 'm':'म', 'y':'य', 'r':'र', 'l':'ल', 'v':'व', 'w':'व',
+                'sh':'श', 'Sh':'ष', 's':'स', 'h':'ह', 'ks':'क्ष', 'tr':'त्र', 'gy':'ज्ञ'
+            };
+            const naturalMap = { 't':'त', 'th':'थ', 'd':'द', 'dh':'ध', 'n':'न', 'T':'ट', 'Th':'ठ', 'D':'ड', 'Dh':'ढ', 'N':'ण', 'L':'ळ' };
+            const VIRAMA = '्';
+
+            // Reverse Maps
+            const revC = {}; Object.keys(c).forEach(k => revC[c[k]] = k); Object.keys(naturalMap).forEach(k => revC[naturalMap[k]] = k);
+            const revM = {}; Object.keys(m).forEach(k => { if(m[k]) revM[m[k]] = k; });
+            const revV = {}; Object.keys(v).forEach(k => revV[v[k]] = k);
+
+            // Arabic Scripts (Forward Only)
+            const urduMap = {'a':'ا','aa':'آ','i':'ی','ee':'ی','u':'و','oo':'و','e':'ے','o':'و','b':'ب','p':'پ','t':'ت','T':'ٹ','th':'تھ','j':'ج','ch':'چ','h':'ہ','kh':'خ','d':'د','D':'ڈ','z':'ز','r':'ر','R':'ڑ','zh':'ژ','s':'س','sh':'ش','f':'ف','q':'ق','k':'ک','g':'گ','l':'ل','m':'م','n':'ن','w':'و','v':'و','y':'ی','ah':'ہ',' ':' '};
+            const sindhiMap = {'a':'ا','b':'ب','bb':'ٻ','bh':'ڀ','t':'ت','th':'ٿ','T':'ٽ','Th':'ٺ','p':'پ','ph':'ڦ','j':'ج','jh':'جه','dy':'ڄ','ch':'چ','chh':'ڇ','h':'ه','kh':'خ','d':'د','dh':'ڌ','D':'ڊ','Dh':'ڍ','r':'ر','R':'ڙ','z':'ز','s':'س','sh':'ش','k':'ڪ','kh':'ک','g':'گ','gg':'ڳ','gh':'گھ','ng':'ڱ','l':'ل','m':'م','n':'ن','ny':'ڻ','w':'و','v':'و','y':'ي',' ':' '};
+
+            const scriptOffsets = { 'hi':0,'mr':0,'ne':0,'kok':0,'sa':0,'brx':0,'doi':0,'mai':0,'sd-dev':0,'ks-dev':0,'bn':0x0080,'as':0x0080,'mni':0x0080,'pa':0x0100,'gu':0x0180,'or':0x0200,'ta':0x0280,'te':0x0300,'kn':0x0380,'ml':0x0400 };
+            const scriptNames = { 'en': 'English', 'hi':'Hindi','mr':'Marathi','ne':'Nepali','kok':'Konkani','sa':'Sanskrit','brx':'Bodo','doi':'Dogri','mai':'Maithili','sd-dev':'Sindhi (Dev)','ks-dev':'Kashmiri (Dev)','ur':'Urdu','sd':'Sindhi (Arabic)','ks':'Kashmiri (Arabic)','bn':'Bengali','as':'Assamese','mni':'Manipuri','pa':'Punjabi','gu':'Gujarati','or':'Odia','ta':'Tamil','te':'Telugu','kn':'Kannada','ml':'Malayalam' };
+
+            // --- DOM ELEMENTS ---
+            const els = {
+                srcInput: document.getElementById('sourceInput'),
+                tgtOutput: document.getElementById('targetOutput'),
+                srcSel: document.getElementById('sourceLang'),
+                tgtSel: document.getElementById('targetLang'),
+                srcLabel: document.getElementById('labelInputArea'),
+                tgtLabel: document.getElementById('labelOutputArea'),
+                swapBtn: document.getElementById('swapBtn'),
+                liveBadge: document.getElementById('liveBadge'),
+                clearBtn: document.getElementById('clearBtn'),
+                copyBtn: document.getElementById('copyBtn'),
+                clearHist: document.getElementById('clearHistoryBtn'),
+                histList: document.getElementById('historyList')
+            };
+
+            let saveTimer;
+
+            // --- ENGINE: EN -> INDIC ---
+            function englishToDevanagari(text) {
+                let res = "", i = 0;
+                function findMatch(str) {
+                    if (c[str]) return { val: c[str], type: 'c' };
+                    if (v[str]) return { val: v[str], type: 'v' };
+                    let lower = str.toLowerCase();
+                    if (c[lower]) return { val: c[lower], type: 'c' };
+                    if (v[lower]) return { val: v[lower], type: 'v' };
+                    return null;
+                }
+                while (i < text.length) {
+                    let match = "", char = "", type = "other"; 
+                    for (let len = 3; len >= 1; len--) {
+                        if (i + len <= text.length) {
+                            let sub = text.substring(i, i + len);
+                            if (naturalMap[sub]) { match = sub; char = naturalMap[sub]; type = 'c'; break; }
+                            let found = findMatch(sub);
+                            if (found) { match = sub; char = found.val; type = found.type; break; }
+                        }
+                    }
+                    if (!match) { res += text[i]; i++; continue; }
+                    if (type === 'c') {
+                        res += char; i += match.length;
+                        let nextIsVowel = false, nextIsConsonant = false, nextMatra = "", nextMatchLen = 0;
+                        if (i < text.length) {
+                            let sub2 = text.substring(i, i + 2).toLowerCase(), sub1 = text.substring(i, i + 1).toLowerCase();
+                            if (i+2 <= text.length && m[sub2]) { nextIsVowel=true; nextMatra=m[sub2]; nextMatchLen=2; }
+                            else if (m[sub1] !== undefined) { nextIsVowel=true; nextMatra=m[sub1]; nextMatchLen=1; }
+                            if (!nextIsVowel) {
+                                for(let clen=2; clen>=1; clen--) {
+                                    if(i+clen <= text.length) {
+                                        let seq = text.substring(i, i+clen);
+                                        if(naturalMap[seq] || findMatch(seq)?.type === 'c') { nextIsConsonant = true; break; }
+                                    }
+                                }
+                            }
+                        }
+                        if (nextIsVowel) { res += nextMatra; i += nextMatchLen; }
+                        else if (nextIsConsonant) { res += VIRAMA; } 
+                    } else { res += char; i += match.length; }
+                }
+                return res;
+            }
+
+            // --- ENGINE: EN -> ARABIC ---
+            function englishToArabicScript(text, map) {
+                let res = "", i = 0;
+                while (i < text.length) {
+                    let match = "", char = "";
+                    for (let len = 3; len >= 1; len--) {
+                        if (i + len <= text.length) {
+                            let sub = text.substring(i, i + len).toLowerCase();
+                            if (map[sub]) { match = sub; char = map[sub]; break; }
+                        }
+                    }
+                    if (match) { res += char; i += match.length; } else { res += text[i]; i++; }
+                }
+                return res;
+            }
+
+            // --- ENGINE: INDIC -> INDIC (Normalization) ---
+            function normalizeToDevanagari(text, sourceLang) {
+                const offset = scriptOffsets[sourceLang];
+                if (offset === undefined) return text; 
+                let res = "";
+                for(let i=0; i<text.length; i++) {
+                    const code = text.charCodeAt(i);
+                    // Unicode Range for Indic script is roughly SourceOffset + 0000 to 007F
+                    // We map it back to Devanagari (0900-097F)
+                    if(code >= 0x0900 + offset && code <= 0x097F + offset) {
+                        res += String.fromCharCode(code - offset);
+                    } else {
+                        res += text[i];
+                    }
+                }
+                return res;
+            }
+
+            // --- ENGINE: INDIC -> EN (Reverse) ---
+            function indicToEnglish(text, sourceLang) {
+                const devText = normalizeToDevanagari(text, sourceLang);
+                let res = "";
+                for(let i=0; i<devText.length; i++) {
+                    const char = devText[i];
+                    if(revV[char]) { res += revV[char]; continue; }
+                    if(revM[char]) { res += revM[char]; continue; }
+                    if(char === VIRAMA) continue; 
+                    if(revC[char]) {
+                        res += revC[char];
+                        if(i + 1 < devText.length) {
+                            const next = devText[i+1];
+                            if(revC[next] || revV[next]) res += "a";
+                        }
+                    } else { res += char; }
+                }
+                return res;
+            }
+
+            // --- CORE PROCESSOR ---
+            function process() {
+                els.liveBadge.style.opacity = '1';
+                setTimeout(() => els.liveBadge.style.opacity = '0', 500);
+
+                const input = els.srcInput.value;
+                const src = els.srcSel.value;
+                const tgt = els.tgtSel.value;
+                
+                let output = "";
+                let isError = false;
+                
+                // Case 1: Source is English
+                if(src === 'en') {
+                    if(['ur','sd','ks'].includes(tgt)) {
+                         output = englishToArabicScript(input, tgt === 'sd' ? sindhiMap : urduMap);
+                    } else if (tgt === 'en') {
+                         output = input; // En -> En
+                    } else {
+                         // En -> Indic
+                         const dev = englishToDevanagari(input);
+                         const off = scriptOffsets[tgt] || 0;
+                         if (off === 0) output = dev;
+                         else {
+                             for (let i = 0; i < dev.length; i++) {
+                                 const c = dev.charCodeAt(i);
+                                 if (c >= 0x0900 && c <= 0x097F) output += String.fromCharCode(c + off);
+                                 else output += dev[i];
+                             }
+                         }
+                    }
+                } 
+                // Case 2: Source is Indic, Target is English (Reverse)
+                else if (tgt === 'en') {
+                    output = indicToEnglish(input, src);
+                }
+                // Case 3: Source is Indic, Target is Indic (Script Conversion)
+                else if (!['ur','sd','ks'].includes(tgt)) {
+                    // Normalize Source -> Devanagari Base -> Target
+                    const dev = normalizeToDevanagari(input, src);
+                    const off = scriptOffsets[tgt] || 0;
+                     if (off === 0) output = dev;
+                     else {
+                         for (let i = 0; i < dev.length; i++) {
+                             const c = dev.charCodeAt(i);
+                             if (c >= 0x0900 && c <= 0x097F) output += String.fromCharCode(c + off);
+                             else output += dev[i];
+                         }
+                     }
+                } 
+                // Case 4: Source is Indic, Target is Urdu (Not Supported well)
+                else {
+                    output = "Direct Indic to Urdu conversion is not currently supported.";
+                    isError = true;
+                }
+
+                // Apply Styling and ReadOnly
+                els.tgtOutput.readOnly = isError;
+                
+                if (isError) {
+                    // Error Style: Gray background, smaller font, italic
+                    els.tgtOutput.className = "w-full h-80 p-5 rounded-xl border border-slate-300 bg-slate-50 outline-none resize-none transition-all text-base text-slate-500 font-sans italic";
+                } else {
+                    // Normal Style
+                    const isRTL = ['ur','sd','ks'].includes(tgt);
+                    els.tgtOutput.className = `w-full h-80 p-5 rounded-xl border border-slate-300 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none resize-none transition-all text-2xl leading-loose shadow-inner text-slate-800 ${isRTL ? 'urdu-font rtl-text' : (tgt === 'en' ? 'font-mono text-lg' : 'indic-font')}`;
+                }
+                
+                els.tgtOutput.value = output;
+                
+                // Only save to history if it's a valid conversion
+                if (!isError) {
+                    clearTimeout(saveTimer);
+                    saveTimer = setTimeout(() => addToHistory(input, output, src, tgt), 2000);
+                }
+            }
+
+            // --- UI ACTIONS ---
+            els.swapBtn.onclick = () => {
+                // Animation
+                els.swapBtn.classList.remove('rotate-anim');
+                void els.swapBtn.offsetWidth; 
+                els.swapBtn.classList.add('rotate-anim');
+
+                // Swap Select Values
+                const tempS = els.srcSel.value;
+                const tempT = els.tgtSel.value;
+                
+                // Need to check if tempT is valid in Source (Source doesn't have Urdu)
+                if(['ur','sd','ks'].includes(tempT)) {
+                    alert("Cannot use Urdu/Sindhi as Input source.");
+                    return;
+                }
+
+                els.srcSel.value = tempT;
+                els.tgtSel.value = tempS;
+
+                // Swap Text
+                const tempTxt = els.srcInput.value;
+                els.srcInput.value = els.tgtOutput.value;
+                els.tgtOutput.value = tempTxt;
+                
+                updateLabels();
+                if(els.srcInput.value) process();
+            };
+
+            function updateLabels() {
+                const sName = scriptNames[els.srcSel.value];
+                const tName = scriptNames[els.tgtSel.value];
+                els.srcLabel.textContent = `Input (${sName})`;
+                els.tgtLabel.textContent = `Output (${tName})`;
+                
+                // Input styling
+                if(els.srcSel.value !== 'en') {
+                     els.srcInput.classList.add('indic-font');
+                     els.srcInput.classList.remove('font-mono');
+                } else {
+                     els.srcInput.classList.remove('indic-font');
+                     els.srcInput.classList.add('font-mono');
+                }
+            }
+
+            els.srcInput.addEventListener('input', process);
+            els.srcSel.addEventListener('change', () => { updateLabels(); process(); });
+            els.tgtSel.addEventListener('change', () => { updateLabels(); process(); });
+
+            els.clearBtn.onclick = () => { els.srcInput.value=''; els.tgtOutput.value=''; els.srcInput.focus(); };
+            els.clearHist.onclick = () => { localStorage.removeItem('bharatHistory'); renderHistory(); };
+            els.copyBtn.onclick = () => {
+                if(!els.tgtOutput.value) return;
+                navigator.clipboard.writeText(els.tgtOutput.value);
+                const t = document.getElementById('toast');
+                t.style.opacity = '1'; t.style.transform = 'translate(-50%, 0)';
+                setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%, 16px)'; }, 2000);
+            };
+
+            // History
+            function addToHistory(input, output, s, t) {
+                if(!input.trim()) return;
+                let h = JSON.parse(localStorage.getItem('bharatHistory') || '[]');
+                if(h.length > 0 && h[0].i === input && h[0].s === s && h[0].t === t) return;
+                h.unshift({ i:input, o:output, s, t, sn:scriptNames[s], tn:scriptNames[t], time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
+                if(h.length > 20) h.pop();
+                localStorage.setItem('bharatHistory', JSON.stringify(h));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                const h = JSON.parse(localStorage.getItem('bharatHistory') || '[]');
+                els.histList.innerHTML = h.length ? '' : '<div class="text-center p-8 text-slate-400 text-xs">History is empty</div>';
+                h.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-3 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-indigo-100 group';
+                    div.onclick = () => {
+                        els.srcSel.value = item.s; els.tgtSel.value = item.t;
+                        els.srcInput.value = item.i; updateLabels(); process();
+                    };
+                    const isRTL = ['ur','sd','ks'].includes(item.t);
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider">${item.sn} → ${item.tn}</span>
+                            <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">${item.time}</span>
+                        </div>
+                        <div class="text-sm text-slate-500 truncate font-mono mb-1">${item.i}</div>
+                        <div class="text-slate-800 truncate leading-relaxed ${isRTL?'urdu-font rtl-text':(item.t==='en'?'font-mono':'indic-font')}">${item.o}</div>
+                    `;
+                    els.histList.appendChild(div);
+                });
+            }
+
+            updateLabels();
+            renderHistory();
+        });
+    </script>
+</body>
+</html>
+
+
