@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Generator | TranslitMedia</title>
+    <!-- Import Google Fonts: Massive collection of Indic & English Styles -->
+    <style>
+        /* Added: Modak, Shrikhand, Khand, Amita, Laila, Martel, Arya, Catamaran, Pavanam, Arima, 
+           Tenali Ramakrishna, Ramabhadra, Sree Krushnadevaraya, Hubballi, Chilanka, Manjari, Rasa, Baloo Da 2 
+        */
+        @import url('https://fonts.googleapis.com/css2?family=Amita:wght@400;700&family=Anton&family=Arima:wght@400;700&family=Arya:wght@400;700&family=Atma:wght@400;700&family=Baloo+2:wght@400;700&family=Baloo+Da+2:wght@400;700&family=Bangers&family=Catamaran:wght@400;700&family=Chilanka&family=Cinzel:wght@400;700&family=Galada&family=Gotu&family=Hind:wght@400;700&family=Hind+Siliguri:wght@400;700&family=Hubballi&family=Indie+Flower&family=Kalam:wght@400;700&family=Khand:wght@400;700&family=Laila:wght@400;700&family=Manjari:wght@400;700&family=Martel:wght@400;700&family=Mina&family=Modak&family=Mukta:wght@400;700&family=Noto+Sans+Gujarati:wght@400;700&family=Noto+Sans+Gurmukhi:wght@400;700&family=Noto+Sans+Kannada:wght@400;700&family=Noto+Sans+Malayalam:wght@400;700&family=Noto+Sans+Tamil:wght@400;700&family=Noto+Sans+Telugu:wght@400;700&family=Noto+Serif+Bengali:wght@400;700&family=Noto+Serif+Devanagari:wght@400;700&family=Noto+Serif+Gujarati:wght@400;700&family=Noto+Serif+Gurmukhi:wght@400;700&family=Noto+Serif+Kannada:wght@400;700&family=Noto+Serif+Malayalam:wght@400;700&family=Noto+Serif+Tamil:wght@400;700&family=Noto+Serif+Telugu:wght@400;700&family=Oswald:wght@400;700&family=Pavanam&family=Permanent+Marker&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;700&family=Press+Start+2P&family=Ramabhadra&family=Rasa:wght@400;700&family=Rozha+One&family=Shrikhand&family=Sree+Krushnadevaraya&family=Teko:wght@400;700&family=Tenali+Ramakrishna&family=Yantramanav:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border: #334155;
+            --danger: #ef4444;
+            --input-bg: rgba(0,0,0,0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Compact Nav */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 0.5rem; }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .back-btn:hover {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .brand svg { width: 20px; height: 20px; stroke: var(--accent); }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 320px 1fr; /* Controls fixed width */
+            gap: 1rem;
+            align-items: start;
+            height: calc(100vh - 60px); /* Fill screen minus nav */
+            overflow: hidden;
+        }
+
+        /* Controls Column */
+        .controls-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .col { flex: 1; }
+
+        label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        input[type="text"], 
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        select option {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        textarea { resize: vertical; min-height: 50px; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+        /* Range Slider */
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--input-bg);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        /* Color Picker Compact */
+        .color-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            padding: 2px;
+            border-radius: 4px;
+            height: 32px;
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            background: none;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        /* Icon Buttons */
+        .toolbar { display: flex; gap: 0.5rem; }
+        .tool-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tool-btn:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: white; }
+        .tool-btn svg { width: 16px; height: 16px; }
+
+        /* Action Buttons */
+        .btn {
+            width: 100%;
+            padding: 0.6rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .btn svg { width: 16px; height: 16px; }
+        .btn.primary { background-color: var(--accent); color: white; }
+        .btn.secondary { background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn.danger { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        /* Compact Upload Area */
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .icon-upload-btn {
+            flex: 1;
+            position: relative;
+            background-color: var(--input-bg);
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            gap: 0.5rem;
+        }
+        .icon-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .icon-upload-btn input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; left: 0; top: 0; }
+
+        /* Preview Panel */
+        .preview-panel {
+            background-color: #000;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            position: relative;
+            height: 100%;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+        }
+
+        .empty-state {
+            color: #475569;
+            text-align: center;
+            position: absolute;
+            pointer-events: none;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr; /* Stack vertically */
+                grid-template-rows: 1fr auto; /* Canvas gets max space, controls auto */
+                padding: 0.5rem;
+                gap: 0.5rem;
+                height: calc(100vh - 55px);
+            }
+            
+            .preview-panel {
+                order: 1;
+                min-height: 200px;
+                flex: 1; /* Take available space */
+            }
+
+            .controls-panel {
+                order: 2;
+                height: auto;
+                max-height: 45vh; /* Limit height so canvas stays visible */
+                padding: 0.75rem;
+            }
+
+            /* On mobile, properties panel overlays or scrolls */
+            .action-row { margin-bottom: 0.5rem; }
+            input[type="range"] { height: 12px; } /* Easier to touch */
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </button>
+        </div>
+        <div class="brand">
+            Meme Generator
+        </div>
+    </nav>
+
+    <main>
+        
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            
+            <!-- Top Toolbar -->
+            <div class="toolbar" style="margin-bottom: 0.5rem;">
+                <button class="tool-btn" id="btnUndo" onclick="undo()" disabled title="Undo">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                </button>
+                <button class="tool-btn" id="btnRedo" onclick="redo()" disabled title="Redo">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+                    </svg>
+                </button>
+                <button class="tool-btn" onclick="resetCanvas()" title="Clear All">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Action Row (Side by Side for Mobile) -->
+            <div class="action-row">
+                <div class="icon-upload-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Upload</span>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                
+                <button class="btn secondary" onclick="addNewText()" style="flex: 1;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Text
+                </button>
+            </div>
+
+            <!-- Dynamic Properties Panel -->
+            <div id="propertiesPanel" style="display: none;">
+                <div class="section-title">Edit Text</div>
+                
+                <div class="form-group">
+                    <textarea id="textContent" placeholder="Type here..." oninput="updateSelectedText()"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <select id="fontFamily" onchange="updateSelectedText()">
+                        <!-- English Styles -->
+                        <optgroup label="English">
+                            <option value="Impact">Impact (Classic)</option>
+                            <option value="Arial">Arial</option>
+                            <option value="'Poppins', sans-serif">Poppins (Clean)</option>
+                            <option value="'Oswald', sans-serif">Oswald (Bold)</option>
+                            <option value="'Anton', sans-serif">Anton (Heavy)</option>
+                            <option value="'Bangers', cursive">Bangers (Comic)</option>
+                            <option value="'Permanent Marker', cursive">Marker (Hand)</option>
+                            <option value="'Press Start 2P', cursive">Pixel Art</option>
+                            <option value="'Cinzel', serif">Cinematic</option>
+                            <option value="'Playfair Display', serif">Serif (Elegant)</option>
+                            <option value="'Indie Flower', cursive">Indie Flower</option>
+                        </optgroup>
+
+                        <!-- Indic Scripts -->
+                        <optgroup label="Hindi / Marathi (Devanagari)">
+                            <option value="'Modak', system-ui">Modak (Heavy/Meme)</option>
+                            <option value="'Teko', sans-serif">Teko (Tall/Bold)</option>
+                            <option value="'Khand', sans-serif">Khand (Condensed)</option>
+                            <option value="'Noto Sans Devanagari', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Devanagari', serif">Noto Serif (Lohit Style)</option>
+                            <option value="'Martel', serif">Martel (Heavy Serif)</option>
+                            <option value="'Hind', sans-serif">Hind</option>
+                            <option value="'Mukta', sans-serif">Mukta</option>
+                            <option value="'Yantramanav', sans-serif">Yantramanav</option>
+                            <option value="'Baloo 2', cursive">Baloo 2 (Playful)</option>
+                            <option value="'Kalam', cursive">Kalam (Handwriting)</option>
+                            <option value="'Amita', cursive">Amita (Calligraphy)</option>
+                            <option value="'Laila', serif">Laila (Cute)</option>
+                            <option value="'Rozha One', serif">Rozha One (Contrast)</option>
+                            <option value="'Gotu', sans-serif">Gotu</option>
+                            <option value="'Arya', sans-serif">Arya</option>
+                        </optgroup>
+                        
+                        <optgroup label="Bengali (Bangla)">
+                            <option value="'Noto Sans Bengali', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Bengali', serif">Noto Serif</option>
+                            <option value="'Baloo Da 2', cursive">Baloo Da 2 (Playful)</option>
+                            <option value="'Hind Siliguri', sans-serif">Hind Siliguri</option>
+                            <option value="'Galada', cursive">Galada (Calligraphy)</option>
+                            <option value="'Mina', sans-serif">Mina</option>
+                            <option value="'Atma', cursive">Atma (Display)</option>
+                        </optgroup>
+
+                        <optgroup label="Gujarati">
+                            <option value="'Shrikhand', cursive">Shrikhand (Retro/Bold)</option>
+                            <option value="'Noto Sans Gujarati', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Gujarati', serif">Noto Serif</option>
+                            <option value="'Rasa', serif">Rasa</option>
+                        </optgroup>
+
+                        <optgroup label="Tamil">
+                            <option value="'Noto Sans Tamil', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Tamil', serif">Noto Serif</option>
+                            <option value="'Catamaran', sans-serif">Catamaran</option>
+                            <option value="'Arima', cursive">Arima</option>
+                            <option value="'Pavanam', sans-serif">Pavanam</option>
+                        </optgroup>
+
+                        <optgroup label="Telugu">
+                            <option value="'Noto Sans Telugu', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Telugu', serif">Noto Serif</option>
+                            <option value="'Ramabhadra', sans-serif">Ramabhadra</option>
+                            <option value="'Tenali Ramakrishna', sans-serif">Tenali Ramakrishna</option>
+                            <option value="'Sree Krushnadevaraya', serif">Sree Krushnadevaraya</option>
+                        </optgroup>
+
+                        <optgroup label="Kannada">
+                            <option value="'Noto Sans Kannada', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Kannada', serif">Noto Serif</option>
+                            <option value="'Hubballi', cursive">Hubballi (Monoline)</option>
+  </optgroup>
+
+                        <optgroup label="Malayalam">
+                            <option value="'Noto Sans Malayalam', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Malayalam', serif">Noto Serif</option>
+                            <option value="'Chilanka', cursive">Chilanka (Handwriting)</option>
+                            <option value="'Manjari', sans-serif">Manjari</option>
+                        </optgroup>
+
+                        <optgroup label="Punjabi (Gurmukhi)">
+                            <option value="'Noto Sans Gurmukhi', sans-serif">Noto Sans</option>
+                            <option value="'Noto Serif Gurmukhi', serif">Noto Serif</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group">
+                        <label>Size</label>
+                        <input type="range" id="fontSize" min="10" max="200" oninput="updateSelectedText()">
+                    </div>
+                    <div class="col form-group">
+                        <label>Rotate</label>
+                        <input type="range" id="rotation" min="-180" max="180" value="0" oninput="updateSelectedText()">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group">
+                        <label>Fill</label>
+                        <div class="color-wrapper">
+                            <input type="color" id="fillColor" oninput="updateSelectedText()">
+                        </div>
+                    </div>
+                    <div class="col form-group">
+                        <label>Outline</label>
+                        <div class="color-wrapper">
+                            <input type="color" id="strokeColor" oninput="updateSelectedText()">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn danger" onclick="deleteSelectedText()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Remove
+                </button>
+            </div>
+            
+            <div id="noSelectionMsg" style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 1rem; border: 1px dashed var(--border); border-radius: 6px;">
+                Select text to edit
+            </div>
+
+            <div style="flex:1"></div>
+
+            <button class="btn primary" onclick="downloadMeme()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+            </button>
+
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <canvas id="memeCanvas"></canvas>
+            <div id="placeholderText" class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="opacity:0.5; margin-bottom:0.5rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p>Upload Image</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const canvas = document.getElementById('memeCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageInput = document.getElementById('imageInput');
+        const propertiesPanel = document.getElementById('propertiesPanel');
+        const noSelectionMsg = document.getElementById('noSelectionMsg');
+        
+        // Property Inputs
+        const textContentInput = document.getElementById('textContent');
+        const fontFamilyInput = document.getElementById('fontFamily');
+        const fontSizeInput = document.getElementById('fontSize');
+        const rotationInput = document.getElementById('rotation');
+        const fillColorInput = document.getElementById('fillColor');
+        const strokeColorInput = document.getElementById('strokeColor');
+
+        let currentImage = null;
+        let textElements = []; 
+        let selectedIndex = -1;
+        let isDragging = false;
+        let dragStartX, dragStartY;
+
+        let historyStack = [];
+        let historyStep = -1;
+
+        canvas.style.display = 'none';
+
+        // --- Core Logic ---
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        currentImage = img;
+                        document.getElementById('placeholderText').style.display = 'none';
+                        canvas.style.display = 'block';
+
+                        // Resize logic
+                        const MAX_WIDTH = 1200; 
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // Reset to EMPTY (No default texts)
+                        textElements = [];
+                        selectedIndex = -1;
+                        
+                        updatePanelFromSelection();
+                        saveState();
+                        draw();
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function createTextObj(text, x, y, size) {
+            return {
+                id: Date.now() + Math.random(),
+                text: text,
+                x: x,
+                y: y,
+                fontSize: size,
+                fontFamily: 'Impact',
+                rotation: 0,
+                fill: '#ffffff',
+                stroke: '#000000'
+            };
+        }
+
+        function addNewText() {
+            if (!currentImage) { 
+                // Create a blank white canvas if no image
+                const blankCanvas = document.createElement('canvas');
+                blankCanvas.width = 800;
+                blankCanvas.height = 800;
+                const ctx = blankCanvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0,0,800,800);
+                
+                const img = new Image();
+                img.onload = function() {
+                    currentImage = img;
+                    document.getElementById('placeholderText').style.display = 'none';
+                    canvas.style.display = 'block';
+                    canvas.width = 800;
+                    canvas.height = 800;
+                    addTextInternal();
+                }
+                img.src = blankCanvas.toDataURL();
+            } else {
+                addTextInternal();
+            }
+        }
+
+        function addTextInternal() {
+            const size = Math.floor(canvas.width / 12);
+            // Add center screen
+            const newText = createTextObj("Text Here", canvas.width/2, canvas.height/2, size);
+            textElements.push(newText);
+            selectedIndex = textElements.length - 1;
+            
+            updatePanelFromSelection();
+            saveState();
+            draw();
+        }
+
+        function deleteSelectedText() {
+            if (selectedIndex > -1) {
+                textElements.splice(selectedIndex, 1);
+                selectedIndex = -1;
+                updatePanelFromSelection();
+                saveState();
+                draw();
+            }
+        }
+
+        // --- Interaction Logic ---
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let clientX, clientY;
+            if(evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        canvas.addEventListener('mousemove', handlePointerMove);
+        canvas.addEventListener('touchmove', handlePointerMove, {passive: false});
+        canvas.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('touchend', handlePointerUp);
+
+        function handlePointerDown(e) {
+            if (!currentImage) return;
+            if (e.type === 'touchstart') e.preventDefault();
+
+            const pos = getMousePos(e);
+            let clickedIndex = -1;
+            
+            for (let i = textElements.length - 1; i >= 0; i--) {
+                const el = textElements[i];
+                if (isHit(pos.x, pos.y, el)) {
+                    clickedIndex = i;
+                    break;
+                }
+            }
+
+            if (clickedIndex > -1) {
+                selectedIndex = clickedIndex;
+                isDragging = true;
+                dragStartX = pos.x - textElements[selectedIndex].x;
+                dragStartY = pos.y - textElements[selectedIndex].y;
+            } else {
+                selectedIndex = -1;
+            }
+            updatePanelFromSelection();
+            draw();
+        }
+
+        function handlePointerMove(e) {
+            if (isDragging && selectedIndex > -1) {
+                if (e.type === 'touchmove') e.preventDefault();
+                const pos = getMousePos(e);
+                textElements[selectedIndex].x = pos.x - dragStartX;
+                textElements[selectedIndex].y = pos.y - dragStartY;
+                draw();
+            }
+        }
+
+        function handlePointerUp(e) {
+            if (isDragging) {
+                isDragging = false;
+                saveState();
+            }
+        }
+
+        function isHit(mx, my, el) {
+            ctx.font = `900 ${el.fontSize}px ${el.fontFamily}`;
+            const metrics = ctx.measureText(el.text);
+            const width = metrics.width;
+            const height = el.fontSize; 
+            const halfW = width / 2;
+            const halfH = height / 2;
+            return (mx >= el.x - halfW && mx <= el.x + halfW && my >= el.y - halfH && my <= el.y + halfH);
+        }
+
+        // --- Drawing ---
+
+        function draw() {
+            if (!currentImage) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+            textElements.forEach((el, index) => {
+                ctx.save();
+                ctx.translate(el.x, el.y);
+                ctx.rotate(el.rotation * Math.PI / 180);
+
+                ctx.font = `900 ${el.fontSize}px ${el.fontFamily}`;
+                ctx.fillStyle = el.fill;
+                ctx.strokeStyle = el.stroke;
+                ctx.lineWidth = Math.max(2, el.fontSize / 15);
+                ctx.lineJoin = 'round';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                ctx.strokeText(el.text, 0, 0);
+                ctx.fillText(el.text, 0, 0);
+
+                if (index === selectedIndex) {
+                    const metrics = ctx.measureText(el.text);
+                    const w = metrics.width + 20;
+                    const h = el.fontSize + 20;
+                    ctx.strokeStyle = '#6366f1';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(-w/2, -h/2, w, h);
+                }
+                ctx.restore();
+            });
+        }
+
+        // --- UI <-> Data Sync ---
+
+        function updatePanelFromSelection() {
+            if (selectedIndex > -1) {
+                const el = textElements[selectedIndex];
+                propertiesPanel.style.display = 'block';
+                noSelectionMsg.style.display = 'none';
+
+                textContentInput.value = el.text;
+                fontFamilyInput.value = el.fontFamily;
+                fontSizeInput.value = el.fontSize;
+                rotationInput.value = el.rotation;
+                fillColorInput.value = el.fill;
+                strokeColorInput.value = el.stroke;
+            } else {
+                propertiesPanel.style.display = 'none';
+                noSelectionMsg.style.display = 'block';
+            }
+        }
+
+        function updateSelectedText() {
+            if (selectedIndex > -1) {
+                const el = textElements[selectedIndex];
+                el.text = textContentInput.value;
+                el.fontFamily = fontFamilyInput.value;
+                el.fontSize = parseInt(fontSizeInput.value);
+                el.rotation = parseInt(rotationInput.value);
+                el.fill = fillColorInput.value;
+                el.stroke = strokeColorInput.value;
+                draw();
+            }
+        }
+
+        // Debounce for sliders
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        
+        const debouncedSave = debounce(() => saveState(), 500);
+        fontSizeInput.addEventListener('mouseup', saveState);
+        rotationInput.addEventListener('mouseup', saveState);
+        textContentInput.addEventListener('blur', saveState);
+
+        // --- History ---
+
+        function saveState() {
+            if (historyStep < historyStack.length - 1) {
+                historyStack = historyStack.slice(0, historyStep + 1);
+            }
+            const state = JSON.stringify(textElements);
+            if (historyStack.length > 0 && historyStack[historyStack.length - 1] === state) return;
+            historyStack.push(state);
+            historyStep++;
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                textElements = JSON.parse(historyStack[historyStep]);
+                selectedIndex = -1;
+                updatePanelFromSelection();
+                draw();
+                updateUndoRedoButtons();
+            }
+        }
+
+        function redo() {
+            if (historyStep < historyStack.length - 1) {
+                historyStep++;
+                textElements = JSON.parse(historyStack[historyStep]);
+                selectedIndex = -1;
+                updatePanelFromSelection();
+                draw();
+                updateUndoRedoButtons();
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            document.getElementById('btnUndo').disabled = historyStep <= 0;
+            document.getElementById('btnRedo').disabled = historyStep >= historyStack.length - 1;
+        }
+
+        function resetCanvas() {
+            if (confirm('Clear all?')) {
+                textElements = [];
+                selectedIndex = -1;
+                updatePanelFromSelection();
+                draw();
+                saveState();
+            }
+        }
+
+        function downloadMeme() {
+            if (!currentImage) return;
+            const prevIndex = selectedIndex;
+            selectedIndex = -1;
+            draw();
+            const link = document.createElement('a');
+            link.download = 'meme-' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            selectedIndex = prevIndex;
+            draw();
+        }
+    </script>
+</body>
+</html>
+
+
