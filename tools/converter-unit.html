@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter | TranslitMedia</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border: #334155;
+            --input-bg: rgba(0,0,0,0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 0.5rem; }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .back-btn:hover { background-color: var(--border); color: var(--text-primary); }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .brand svg { width: 20px; height: 20px; stroke: var(--accent); }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 2rem;
+            height: calc(100vh - 60px);
+            overflow: hidden; /* Contain scrolling within main */
+        }
+
+        /* Category Sidebar */
+        .category-list {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        .cat-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .cat-btn:hover { background-color: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .cat-btn.active { background-color: var(--accent); color: white; }
+        .cat-btn svg { width: 20px; height: 20px; opacity: 0.8; flex-shrink: 0; }
+
+        /* Converter Panel */
+        .converter-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+        .panel-desc { color: var(--text-secondary); font-size: 0.9rem; }
+        .refresh-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--accent);
+            padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;
+            display: none; /* Shown only for currency */
+        }
+        .refresh-btn:hover { background: var(--input-bg); }
+
+        /* Conversion Grid */
+        .conversion-grid {
+            display: grid;
+            grid-template-columns: 1fr 40px 1fr;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .unit-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        label { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        input[type="number"] {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        input:focus { border-color: var(--accent); }
+
+        select {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.85rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1rem;
+        }
+        
+        select option { background-color: var(--card-bg); color: var(--text-primary); }
+
+        /* Swap Button */
+        .swap-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            align-self: center;
+            margin-top: 1.8rem; /* Align with inputs */
+        }
+        .swap-btn:hover { background-color: var(--accent); color: white; transform: rotate(180deg); }
+
+        /* Formula / Info */
+        .info-box {
+            background-color: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .info-box strong { color: var(--accent); }
+
+        /* Mobile Optimization */
+        @media (max-width: 900px) {
+            main { 
+                grid-template-columns: 1fr; 
+                grid-template-rows: auto 1fr;
+                padding: 0;
+                gap: 0;
+                height: auto;
+                min-height: calc(100vh - 60px);
+                display: flex; /* Switch to flex column for better scroll control */
+                flex-direction: column;
+            }
+
+            .category-list { 
+                flex-direction: row; 
+                overflow-x: auto; 
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                border-left: none; border-right: none; border-top: none;
+                background-color: var(--bg-color); /* Match body to look seamless */
+                gap: 0.75rem;
+                height: auto;
+                flex-shrink: 0; /* Don't shrink */
+                scrollbar-width: none; /* Hide scrollbar */
+            }
+            .category-list::-webkit-scrollbar { display: none; }
+
+            .cat-btn { 
+                background-color: var(--card-bg);
+                border: 1px solid var(--border);
+                margin: 0;
+                white-space: nowrap;
+                padding: 0.6rem 1rem;
+                font-size: 0.85rem;
+            }
+            .cat-btn.active { background: var(--accent); border-color: var(--accent); }
+            
+            .converter-panel {
+                border-radius: 0;
+                border: none;
+                flex: 1; /* Fill remaining height */
+                padding: 1.5rem;
+            }
+
+            .conversion-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .swap-btn { margin: 0 auto; transform: rotate(90deg); }
+            .swap-btn:hover { transform: rotate(270deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </button>
+        </div>
+        <div class="brand">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Unit Converter
+        </div>
+        <div style="width: 70px;"></div>
+    </nav>
+
+    <main>
+        <!-- Category Sidebar -->
+        <div class="category-list" id="categoryList">
+            <!-- Injected via JS -->
+        </div>
+
+        <!-- Converter Panel -->
+        <div class="converter-panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title" id="currentTitle">Length</div>
+                    <div class="panel-desc">Offline calculation.</div>
+                </div>
+                <button id="refreshBtn" class="refresh-btn" onclick="fetchCurrency()">Update Rates</button>
+            </div>
+
+            <div class="conversion-grid">
+                <!-- FROM -->
+                <div class="unit-box">
+                    <label>From</label>
+                    <input type="number" id="fromVal" placeholder="0" oninput="convert('from')">
+                    <select id="fromUnit" onchange="convert('from')"></select>
+                </div>
+
+                <!-- SWAP -->
+                <button class="swap-btn" onclick="swapUnits()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                </button>
+
+                <!-- TO -->
+                <div class="unit-box">
+                    <label>To</label>
+                    <input type="number" id="toVal" placeholder="0" oninput="convert('to')">
+                    <select id="toUnit" onchange="convert('from')"></select>
+                </div>
+            </div>
+
+            <div class="info-box" id="formulaBox">
+                Select units to see conversion formula.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- CURRENCY METADATA (Comprehensive) ---
+        const currencyMeta = {
+            'AED': { n: 'United Arab Emirates Dirham', s: 'د.إ' },
+            'AFN': { n: 'Afghan Afghani', s: '؋' },
+            'ALL': { n: 'Albanian Lek', s: 'L' },
+            'AMD': { n: 'Armenian Dram', s: '֏' },
+            'ANG': { n: 'Netherlands Antillean Guilder', s: 'ƒ' },
+            'AOA': { n: 'Angolan Kwanza', s: 'Kz' },
+            'ARS': { n: 'Argentine Peso', s: '$' },
+            'AUD': { n: 'Australian Dollar', s: '$' },
+            'AWG': { n: 'Aruban Florin', s: 'ƒ' },
+            'AZN': { n: 'Azerbaijani Manat', s: '₼' },
+            'BAM': { n: 'Bosnia-Herzegovina Convertible Mark', s: 'KM' },
+            'BBD': { n: 'Barbadian Dollar', s: '$' },
+            'BDT': { n: 'Bangladeshi Taka', s: '৳' },
+            'BGN': { n: 'Bulgarian Lev', s: 'лв' },
+            'BHD': { n: 'Bahraini Dinar', s: '.د.ب' },
+            'BIF': { n: 'Burundian Franc', s: 'FBu' },
+            'BMD': { n: 'Bermudan Dollar', s: '$' },
+            'BND': { n: 'Brunei Dollar', s: '$' },
+            'BOB': { n: 'Bolivian Boliviano', s: 'Bs.' },
+            'BRL': { n: 'Brazilian Real', s: 'R$' },
+            'BSD': { n: 'Bahamian Dollar', s: '$' },
+            'BTN': { n: 'Bhutanese Ngultrum', s: 'Nu.' },
+            'BWP': { n: 'Botswanan Pula', s: 'P' },
+            'BYN': { n: 'Belarusian Ruble', s: 'Br' },
+            'BZD': { n: 'Belize Dollar', s: '$' },
+            'CAD': { n: 'Canadian Dollar', s: '$' },
+            'CDF': { n: 'Congolese Franc', s: 'FC' },
+            'CHF': { n: 'Swiss Franc', s: 'Fr' },
+            'CLP': { n: 'Chilean Peso', s: '$' },
+            'CNY': { n: 'Chinese Yuan', s: '¥' },
+            'COP': { n: 'Colombian Peso', s: '$' },
+            'CRC': { n: 'Costa Rican Colón', s: '₡' },
+            'CUP': { n: 'Cuban Peso', s: '$' },
+            'CVE': { n: 'Cape Verdean Escudo', s: 'Esc' },
+            'CZK': { n: 'Czech Koruna', s: 'Kč' },
+            'DJF': { n: 'Djiboutian Franc', s: 'Fdj' },
+            'DKK': { n: 'Danish Krone', s: 'kr' },
+            'DOP': { n: 'Dominican Peso', s: '$' },
+            'DZD': { n: 'Algerian Dinar', s: 'د.ج' },
+            'EGP': { n: 'Egyptian Pound', s: '£' },
+            'ERN': { n: 'Eritrean Nakfa', s: 'Nfk' },
+            'ETB': { n: 'Ethiopian Birr', s: 'Br' },
+            'EUR': { n: 'Euro', s: '€' },
+            'FJD': { n: 'Fijian Dollar', s: '$' },
+            'FKP': { n: 'Falkland Islands Pound', s: '£' },
+            'FOK': { n: 'Faroese Króna', s: 'kr' },
+            'GBP': { n: 'British Pound', s: '£' },
+            'GEL': { n: 'Georgian Lari', s: '₾' },
+            'GGP': { n: 'Guernsey Pound', s: '£' },
+            'GHS': { n: 'Ghanaian Cedi', s: '₵' },
+            'GIP': { n: 'Gibraltar Pound', s: '£' },
+            'GMD': { n: 'Gambian Dalasi', s: 'D' },
+            'GNF': { n: 'Guinean Franc', s: 'FG' },
+            'GTQ': { n: 'Guatemalan Quetzal', s: 'Q' },
+            'GYD': { n: 'Guyanese Dollar', s: '$' },
+            'HKD': { n: 'Hong Kong Dollar', s: '$' },
+            'HNL': { n: 'Honduran Lempira', s: 'L' },
+            'HRK': { n: 'Croatian Kuna', s: 'kn' },
+            'HTG': { n: 'Haitian Gourde', s: 'G' },
+            'HUF': { n: 'Hungarian Forint', s: 'Ft' },
+            'IDR': { n: 'Indonesian Rupiah', s: 'Rp' },
+            'ILS': { n: 'Israeli New Shekel', s: '₪' },
+            'IMP': { n: 'Manx Pound', s: '£' },
+            'INR': { n: 'Indian Rupee', s: '₹' },
+            'IQD': { n: 'Iraqi Dinar', s: 'ع.د' },
+            'IRR': { n: 'Iranian Rial', s: '﷼' },
+            'ISK': { n: 'Icelandic Króna', s: 'kr' },
+            'JEP': { n: 'Jersey Pound', s: '£' },
+            'JMD': { n: 'Jamaican Dollar', s: '$' },
+            'JOD': { n: 'Jordanian Dinar', s: 'د.ا' },
+            'JPY': { n: 'Japanese Yen', s: '¥' },
+            'KES': { n: 'Kenyan Shilling', s: 'KSh' },
+            'KGS': { n: 'Kyrgyzstani Som', s: 'с' },
+            'KHR': { n: 'Cambodian Riel', s: '៛' },
+            'KID': { n: 'Kiribati Dollar', s: '$' },
+            'KMF': { n: 'Comorian Franc', s: 'CF' },
+            'KRW': { n: 'South Korean Won', s: '₩' },
+            'KWD': { n: 'Kuwaiti Dinar', s: 'د.ك' },
+            'KYD': { n: 'Cayman Islands Dollar', s: '$' },
+            'KZT': { n: 'Kazakhstani Tenge', s: '₸' },
+            'LAK': { n: 'Lao Kip', s: '₭' },
+            'LBP': { n: 'Lebanese Pound', s: 'ل.ل' },
+            'LKR': { n: 'Sri Lankan Rupee', s: 'Rs' },
+            'LRD': { n: 'Liberian Dollar', s: '$' },
+            'LSL': { n: 'Lesotho Loti', s: 'L' },
+            'LYD': { n: 'Libyan Dinar', s: 'ل.د' },
+            'MAD': { n: 'Moroccan Dirham', s: 'د.م.' },
+            'MDL': { n: 'Moldovan Leu', s: 'L' },
+            'MGA': { n: 'Malagasy Ariary', s: 'Ar' },
+            'MKD': { n: 'Macedonian Denar', s: 'ден' },
+            'MMK': { n: 'Burmese Kyat', s: 'K' },
+            'MNT': { n: 'Mongolian Tögrög', s: '₮' },
+            'MOP': { n: 'Macanese Pataca', s: 'P' },
+            'MRU': { n: 'Mauritanian Ouguiya', s: 'UM' },
+            'MUR': { n: 'Mauritian Rupee', s: '₨' },
+            'MVR': { n: 'Maldivian Rufiyaa', s: 'Rf' },
+            'MWK': { n: 'Malawian Kwacha', s: 'MK' },
+            'MXN': { n: 'Mexican Peso', s: '$' },
+            'MYR': { n: 'Malaysian Ringgit', s: 'RM' },
+            'MZN': { n: 'Mozambican Metical', s: 'MT' },
+            'NAD': { n: 'Namibian Dollar', s: '$' },
+            'NGN': { n: 'Nigerian Naira', s: '₦' },
+            'NIO': { n: 'Nicaraguan Córdoba', s: 'C$' },
+            'NOK': { n: 'Norwegian Krone', s: 'kr' },
+            'NPR': { n: 'Nepalese Rupee', s: '₨' },
+            'NZD': { n: 'New Zealand Dollar', s: '$' },
+            'OMR': { n: 'Omani Rial', s: 'ر.ع.' },
+            'PAB': { n: 'Panamanian Balboa', s: 'B/.' },
+            'PEN': { n: 'Peruvian Sol', s: 'S/.' },
+            'PGK': { n: 'Papua New Guinean Kina', s: 'K' },
+            'PHP': { n: 'Philippine Peso', s: '₱' },
+            'PKR': { n: 'Pakistani Rupee', s: '₨' },
+            'PLN': { n: 'Polish Złoty', s: 'zł' },
+            'PYG': { n: 'Paraguayan Guaraní', s: '₲' },
+            'QAR': { n: 'Qatari Riyal', s: 'ر.ق' },
+            'RON': { n: 'Romanian Leu', s: 'lei' },
+            'RSD': { n: 'Serbian Dinar', s: 'дин.' },
+            'RUB': { n: 'Russian Ruble', s: '₽' },
+            'RWF': { n: 'Rwandan Franc', s: 'FRw' },
+            'SAR': { n: 'Saudi Riyal', s: '﷼' },
+            'SBD': { n: 'Solomon Islands Dollar', s: '$' },
+            'SCR': { n: 'Seychellois Rupee', s: '₨' },
+            'SDG': { n: 'Sudanese Pound', s: 'ج.س.' },
+            'SEK': { n: 'Swedish Krona', s: 'kr' },
+            'SGD': { n: 'Singapore Dollar', s: '$' },
+            'SHP': { n: 'Saint Helena Pound', s: '£' },
+            'SLE': { n: 'Sierra Leonean Leone', s: 'Le' },
+            'SOS': { n: 'Somali Shilling', s: 'Sh' },
+            'SRD': { n: 'Surinamese Dollar', s: '$' },
+            'SSP': { n: 'South Sudanese Pound', s: '£' },
+            'STN': { n: 'São Tomé and Príncipe Dobra', s: 'Db' },
+            'SYP': { n: 'Syrian Pound', s: '£' },
+            'SZL': { n: 'Eswatini Lilangeni', s: 'L' },
+            'THB': { n: 'Thai Baht', s: '฿' },
+            'TJS': { n: 'Tajikistani Somoni', s: 'SM' },
+            'TMT': { n: 'Turkmenistani Manat', s: 'T' },
+            'TND': { n: 'Tunisian Dinar', s: 'د.ت' },
+            'TOP': { n: 'Tongan Paʻanga', s: 'T$' },
+            'TRY': { n: 'Turkish Lira', s: '₺' },
+            'TTD': { n: 'Trinidad and Tobago Dollar', s: '$' },
+            'TVD': { n: 'Tuvaluan Dollar', s: '$' },
+            'TWD': { n: 'New Taiwan Dollar', s: 'NT$' },
+            'TZS': { n: 'Tanzanian Shilling', s: 'Sh' },
+            'UAH': { n: 'Ukrainian Hryvnia', s: '₴' },
+            'UGX': { n: 'Ugandan Shilling', s: 'USh' },
+            'USD': { n: 'United States Dollar', s: '$' },
+            'UYU': { n: 'Uruguayan Peso', s: '$' },
+            'UZS': { n: 'Uzbekistani So\'m', s: 'so\'m' },
+            'VES': { n: 'Venezuelan Bolívar', s: 'Bs.' },
+            'VND': { n: 'Vietnamese Dong', s: '₫' },
+            'VUV': { n: 'Vanuatu Vatu', s: 'Vt' },
+            'WST': { n: 'Samoan Tālā', s: 'T' },
+            'XAF': { n: 'Central African CFA Franc', s: 'Fr' },
+            'XCD': { n: 'East Caribbean Dollar', s: '$' },
+            'XDR': { n: 'Special Drawing Rights', s: 'SDR' },
+            'XOF': { n: 'West African CFA Franc', s: 'Fr' },
+            'XPF': { n: 'CFP Franc', s: '₣' },
+            'YER': { n: 'Yemeni Rial', s: '﷼' },
+            'ZAR': { n: 'South African Rand', s: 'R' },
+            'ZMW': { n: 'Zambian Kwacha', s: 'ZK' },
+            'ZWL': { n: 'Zimbabwean Dollar', s: '$' }
+        };
+
+        const unitData = {
+            currency: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />',
+                name: 'Currency',
+                isCurrency: true,
+                base: 'USD',
+                units: {} 
+            },
+            length: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 00-2-2H9a2 2 0 00-2 2v6h24v-6a2 2 0 00-2-2h-6z" />',
+                name: 'Length',
+                base: 'm',
+                units: {
+                    'm': {n:'Meter', f:1}, 'km': {n:'Kilometer', f:1000}, 'cm': {n:'Centimeter', f:0.01}, 
+                    'mm': {n:'Millimeter', f:0.001}, 'µm': {n:'Micrometer', f:1e-6}, 'nm': {n:'Nanometer', f:1e-9},
+                    'mi': {n:'Mile', f:1609.34}, 'yd': {n:'Yard', f:0.9144}, 'ft': {n:'Foot', f:0.3048}, 
+                    'in': {n:'Inch', f:0.0254}, 'nmi': {n:'Nautical Mile', f:1852}, 'ly': {n:'Light Year', f:9.461e15},
+                    'pm': {n:'Picometer', f:1e-12}, 'dm': {n:'Decimeter', f:0.1}, 'dam': {n:'Decameter', f:10}, 
+                    'hm': {n:'Hectometer', f:100}, 'Mm': {n:'Megameter', f:1e6}, 'Gm': {n:'Gigameter', f:1e9},
+                    'au': {n:'Astronomical Unit', f:1.496e11}, 'pc': {n:'Parsec', f:3.086e16}, 'fm': {n:'Fermi', f:1e-15},
+                    'Å': {n:'Angstrom', f:1e-10}, 'mil': {n:'Mil', f:0.0000254}
+                }
+            },
+            mass: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>',
+                name: 'Mass',
+                base: 'kg',
+                units: {
+                    'kg': {n:'Kilogram', f:1}, 'g': {n:'Gram', f:0.001}, 'mg': {n:'Milligram', f:1e-6}, 
+                    't': {n:'Metric Ton', f:1000}, 'lb': {n:'Pound', f:0.453592}, 'oz': {n:'Ounce', f:0.0283495}, 
+                    'st': {n:'Stone', f:6.35029}, 'ton_us': {n:'Short Ton (US)', f:907.185},
+                    'pg': {n:'Picogram', f:1e-15}, 'ng': {n:'Nanogram', f:1e-12}, 'µg': {n:'Microgram', f:1e-9},
+                    'kt': {n:'Kiloton', f:1e6}, 'Mt': {n:'Megaton', f:1e9}, 'gr': {n:'Grain', f:0.0000647989}, 
+                    'slug': {n:'Slug', f:14.5939}, 'ton_uk': {n:'Long Ton (UK)', f:1016.05}, 'ct': {n:'Carat', f:0.0002}
+                }
+            },
+            time: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                name: 'Time',
+                units: { 
+                    's': {n:'Second', f:1}, 'min': {n:'Minute', f:60}, 'h': {n:'Hour', f:3600},
+                    'd': {n:'Day', f:86400}, 'wk': {n:'Week', f:604800}, 'mo': {n:'Month (Avg)', f:2.628e6},
+                    'yr': {n:'Year (Avg)', f:3.154e7}, 'ms': {n:'Millisecond', f:0.001}, 'µs': {n:'Microsecond', f:1e-6},
+                    'ns': {n:'Nanosecond', f:1e-9}, 'dec': {n:'Decade', f:3.154e8}, 'cen': {n:'Century', f:3.154e9},
+                    'mil': {n:'Millennium', f:3.154e10}
+                }
+            },
+            data: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>',
+                name: 'Data Storage',
+                units: { 
+                    'B': {n:'Byte', f:1}, 'KB': {n:'Kilobyte', f:1024}, 'MB': {n:'Megabyte', f:1048576}, 
+                    'GB': {n:'Gigabyte', f:1.074e9}, 'TB': {n:'Terabyte', f:1.1e12}, 'PB': {n:'Petabyte', f:1.126e15}, 
+                    'b': {n:'Bit', f:0.125}, 'nyb': {n:'Nibble', f:0.5}, 'EB': {n:'Exabyte', f:1.153e18},
+                    'ZB': {n:'Zettabyte', f:1.18e21}, 'YB': {n:'Yottabyte', f:1.209e24}
+                }
+            },
+            data_rate: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>',
+                name: 'Data Transfer Rate',
+                units: {
+                    'bps': {n:'Bit per second', f:1}, 'Kbps': {n:'Kilobit/s', f:1000}, 'Mbps': {n:'Megabit/s', f:1e6},
+                    'Gbps': {n:'Gigabit/s', f:1e9}, 'Tbps': {n:'Terabit/s', f:1e12},
+                    'Bps': {n:'Byte per second', f:8}, 'KBps': {n:'Kilobyte/s', f:8000}, 'MBps': {n:'Megabyte/s', f:8e6}
+                }
+            },
+            temp: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 13a4 4 0 11-8 0 4 4 0 018 0zm-4-7a6 6 0 110-12 6 6 0 010 12zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a5.5 5.5 0 01-1.206-1.206M12 15v6m0 0l3-3m-3 3l-3-3"/>',
+                name: 'Temperature',
+                type: 'func',
+                units: { 'C': 'Celsius', 'F': 'Fahrenheit', 'K': 'Kelvin', 'R': 'Rankine' }
+            },
+            area: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"/>',
+                name: 'Area',
+                units: {
+                    'm²': {n:'Square Meter', f:1}, 'km²': {n:'Square Kilometer', f:1e6}, 'ha': {n:'Hectare', f:10000},
+                    'ac': {n:'Acre', f:4046.86}, 'mi²': {n:'Square Mile', f:2.59e6}, 'ft²': {n:'Square Foot', f:0.092903}
+                }
+            },
+            volume: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>',
+                name: 'Volume',
+                units: {
+                    'L': {n:'Liter', f:1}, 'mL': {n:'Milliliter', f:0.001}, 'm³': {n:'Cubic Meter', f:1000},
+                    'gal': {n:'Gallon (US)', f:3.78541}, 'qt': {n:'Quart (US)', f:0.946353}, 'pt': {n:'Pint (US)', f:0.473176},
+                    'barrel': {n:'Oil Barrel', f:158.987}, 'hogshead': {n:'Hogshead', f:238.48}
+                }
+            },
+            cooking: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>',
+                name: 'Cooking',
+                units: {
+                    'tsp': {n:'Teaspoon (US)', f:4.9289}, 'tbsp': {n:'Tablespoon (US)', f:14.7868},
+                    'cup_us': {n:'Cup (US)', f:236.588}, 'cup_metric': {n:'Cup (Metric)', f:250},
+                    'fl_oz': {n:'Fluid Ounce (US)', f:29.5735}, 'ml': {n:'Milliliter', f:1}, 'l': {n:'Liter', f:1000}
+                }
+            },
+            speed: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                name: 'Speed',
+                units: { 'm/s': {n:'Meter/Second', f:1}, 'km/h': {n:'Km/Hour', f:0.277778}, 'mph': {n:'Mile/Hour', f:0.44704}, 'kn': {n:'Knot', f:0.514444} }
+            },
+            angle: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>',
+                name: 'Angle',
+                units: { 
+                    'deg': {n:'Degree', f:1}, 'rad': {n:'Radian', f:57.2958}, 'grad': {n:'Gradian', f:0.9},
+                    'arcmin': {n:'Arcminute', f:0.016667}, 'arcsec': {n:'Arcsecond', f:0.00027778}
+                }
+            },
+            force: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>',
+                name: 'Force',
+                units: { 'N': {n:'Newton', f:1}, 'kN': {n:'Kilonewton', f:1000}, 'lbf': {n:'Pound-force', f:4.44822}, 'kgf': {n:'Kilogram-force', f:9.80665}, 'dyn': {n:'Dyne', f:1e-5} }
+            },
+            torque: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>',
+                name: 'Torque',
+                units: { 
+                    'N·m': {n:'Newton Meter', f:1}, 'dyn·cm': {n:'Dyne Centimeter', f:1e-7},
+                    'lbf·ft': {n:'Pound-force Foot', f:1.35582}, 'lbf·in': {n:'Pound-force Inch', f:0.112985}
+                }
+            },
+            pressure: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>',
+                name: 'Pressure',
+                units: { 'Pa': {n:'Pascal', f:1}, 'bar': {n:'Bar', f:100000}, 'psi': {n:'PSI', f:6894.76}, 'atm': {n:'Atmosphere', f:101325} }
+            },
+            energy: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                name: 'Energy',
+                units: { 'J': {n:'Joule', f:1}, 'kJ': {n:'Kilojoule', f:1000}, 'cal': {n:'Calorie', f:4.184}, 'kWh': {n:'Kilowatt-hour', f:3.6e6}, 'BTU': {n:'BTU', f:1055.06} }
+            },
+            power: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                name: 'Power',
+                units: { 'W': {n:'Watt', f:1}, 'kW': {n:'Kilowatt', f:1000}, 'hp': {n:'Horsepower', f:745.7} }
+            },
+            fuel: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                name: 'Fuel',
+                type: 'func',
+                units: { 'mpg_us': 'MPG (US)', 'mpg_uk': 'MPG (UK)', 'km_l': 'km/L', 'l_100km': 'L/100km' }
+            },
+            voltage: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                name: 'Voltage',
+                units: { 'V': {n:'Volt', f:1}, 'mV': {n:'Millivolt', f:0.001}, 'kV': {n:'Kilovolt', f:1000} }
+            },
+            current: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                name: 'Current',
+                units: { 'A': {n:'Ampere', f:1}, 'mA': {n:'Milliampere', f:0.001}, 'kA': {n:'Kiloampere', f:1000} }
+            },
+            freq: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
+                name: 'Frequency',
+                units: { 'Hz': {n:'Hertz', f:1}, 'kHz': {n:'Kilohertz', f:1000}, 'MHz': {n:'Megahertz', f:1e6}, 'GHz': {n:'Gigahertz', f:1e9} }
+            },
+            illuminance: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>',
+                name: 'Illuminance',
+                units: { 'lx': {n:'Lux', f:1}, 'fc': {n:'Foot-candle', f:10.7639} }
+            },
+            typography: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>',
+                name: 'Typography',
+                base: 'px',
+                units: {
+                    'px': {n:'Pixel', f:1}, 'pt': {n:'Point', f:1.33333}, 'pc': {n:'Pica', f:16},
+                    'in': {n:'Inch', f:96}, 'cm': {n:'Centimeter', f:37.7953}, 'mm': {n:'Millimeter', f:3.77953}
+                }
+            },
+            radiation: {
+                icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                name: 'Radiation',
+                units: { 'Gy': {n:'Gray', f:1}, 'Sv': {n:'Sievert', f:1}, 'rad': {n:'Rad', f:0.01}, 'rem': {n:'Rem', f:0.01} }
+            }
+        };
+
+        // --- STATE ---
+        let currentCat = 'length';
+        let currencyRates = { 'USD': 1, 'EUR': 0.92, 'GBP': 0.79, 'INR': 83.5, 'JPY': 150, 'CNY': 7.2, 'CAD': 1.36, 'AUD': 1.52 };
+        // --- INIT ---
+        window.onload = function() {
+            renderSidebar();
+            loadCategory(currentCat);
+            
+            const cached = localStorage.getItem('currency_rates');
+            if(cached) {
+                const data = JSON.parse(cached);
+                if(Date.now() - data.timestamp < 86400000) {
+                    currencyRates = data.rates;
+                }
+            }
+        };
+
+        // --- RENDER SIDEBAR ---
+        function renderSidebar() {
+            const list = document.getElementById('categoryList');
+            let html = '';
+            for (const [key, data] of Object.entries(unitData)) {
+                html += `
+                    <button class="cat-btn ${key === currentCat ? 'active' : ''}" onclick="loadCategory('${key}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${data.icon}</svg>
+                        ${data.name}
+                    </button>
+                `;
+            }
+            list.innerHTML = html;
+        }
+
+        // --- LOAD CATEGORY ---
+        async function loadCategory(key) {
+            currentCat = key;
+            const data = unitData[key];
+            
+            document.getElementById('currentTitle').innerText = data.name;
+            document.querySelector('.panel-desc').innerText = data.isCurrency ? 'Live rates from Open API.' : 'Offline calculation.';
+            document.getElementById('refreshBtn').style.display = data.isCurrency ? 'block' : 'none';
+            
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            renderSidebar(); 
+
+            if (data.isCurrency) {
+                if(!Object.keys(data.units).length) {
+                    populateCurrencyUnits();
+                    fetchCurrency(); 
+                } else {
+                    populateSelects(data);
+                }
+            } else {
+                populateSelects(data);
+            }
+        }
+
+        function populateSelects(data) {
+            const fromSelect = document.getElementById('fromUnit');
+            const toSelect = document.getElementById('toUnit');
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+
+            if (data.type === 'func') {
+                for (const [code, name] of Object.entries(data.units)) {
+                    const label = `${code} (${name})`;
+                    fromSelect.add(new Option(label, code));
+                    toSelect.add(new Option(label, code));
+                }
+            } else {
+                for (const [code, info] of Object.entries(data.units)) {
+                    const label = `${code} (${info.n})`;
+                    fromSelect.add(new Option(label, code));
+                    toSelect.add(new Option(label, code));
+                }
+            }
+
+            if (data.isCurrency) {
+                if (fromSelect.querySelector('option[value="USD"]')) fromSelect.value = 'USD';
+                if (toSelect.querySelector('option[value="INR"]')) toSelect.value = 'INR';
+            } else {
+                if(toSelect.options.length > 1) toSelect.selectedIndex = 1;
+            }
+            
+            convert('from');
+        }
+
+        function populateCurrencyUnits() {
+            const data = unitData.currency;
+            data.units = {};
+            for (const [code, rate] of Object.entries(currencyRates)) {
+                const meta = currencyMeta[code];
+                let name = meta ? meta.n : code;
+                let sym = meta && meta.s ? meta.s : '';
+                let displayName = sym ? `${name} - ${sym}` : name;
+                
+                data.units[code] = { n: displayName, f: 1/rate }; 
+            }
+            populateSelects(data);
+        }
+
+        async function fetchCurrency() {
+            try {
+                const btn = document.getElementById('refreshBtn');
+                btn.innerText = 'Updating...';
+                
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                const json = await res.json();
+                
+                if (json && json.rates) {
+                    currencyRates = json.rates;
+                    localStorage.setItem('currency_rates', JSON.stringify({
+                        timestamp: Date.now(),
+                        rates: currencyRates
+                    }));
+                    populateCurrencyUnits();
+                    btn.innerText = 'Updated';
+                    setTimeout(() => btn.innerText = 'Update Rates', 2000);
+                }
+            } catch (e) {
+                document.getElementById('refreshBtn').innerText = 'Failed (Offline)';
+            }
+        }
+
+        function swapUnits() {
+            const from = document.getElementById('fromUnit');
+            const to = document.getElementById('toUnit');
+            const temp = from.value;
+            from.value = to.value;
+            to.value = temp;
+            convert('from');
+        }
+
+        function convert(source) {
+            const fromUnit = document.getElementById('fromUnit').value;
+            const toUnit = document.getElementById('toUnit').value;
+            const fromInput = document.getElementById('fromVal');
+            const toInput = document.getElementById('toVal');
+            const formulaBox = document.getElementById('formulaBox');
+
+            let val = parseFloat(source === 'from' ? fromInput.value : toInput.value);
+            if (isNaN(val)) {
+                if(source === 'from') toInput.value = ''; else fromInput.value = '';
+                formulaBox.innerHTML = 'Enter a number.';
+                return;
+            }
+
+            const data = unitData[currentCat];
+            let result;
+
+            if (data.type === 'func') {
+                if (currentCat === 'temp') {
+                    result = convertTemp(val, fromUnit, toUnit);
+                } else if (currentCat === 'fuel') {
+                    result = convertFuel(val, fromUnit, toUnit);
+                }
+                formulaBox.innerHTML = `Complex formula`;
+            } else if (data.isCurrency) {
+                const fromRate = currencyRates[fromUnit];
+                const toRate = currencyRates[toUnit];
+                
+                if (source === 'from') {
+                    result = (val / fromRate) * toRate;
+                } else {
+                    result = (val / toRate) * fromRate;
+                }
+                formulaBox.innerHTML = `1 ${fromUnit} = ${(toRate/fromRate).toFixed(4)} ${toUnit}`;
+            } else {
+                const fromFactor = data.units[fromUnit].f;
+                const toFactor = data.units[toUnit].f;
+
+                if (source === 'from') {
+                    result = val * (fromFactor / toFactor);
+                } else {
+                    result = val * (toFactor / fromFactor);
+                }
+                
+                const ratio = fromFactor / toFactor;
+                formulaBox.innerHTML = `1 ${fromUnit} = ${formatNumber(ratio)} ${toUnit}`;
+            }
+
+            if (source === 'from') toInput.value = formatNumber(result);
+            else fromInput.value = formatNumber(result);
+        }
+
+        function convertTemp(val, from, to) {
+            let c; 
+            if (from === 'C') c = val;
+            else if (from === 'F') c = (val - 32) * 5/9;
+            else if (from === 'K') c = val - 273.15;
+            else if (from === 'R') c = (val - 491.67) * 5/9;
+
+            if (to === 'C') return c;
+            if (to === 'F') return c * 9/5 + 32;
+            if (to === 'K') return c + 273.15;
+            if (to === 'R') return (c + 273.15) * 9/5;
+            return val;
+        }
+
+        function convertFuel(val, from, to) {
+            let kml;
+            if (from === 'km_l') kml = val;
+            else if (from === 'mpg_us') kml = val * 0.425144;
+            else if (from === 'mpg_uk') kml = val * 0.354006;
+            else if (from === 'l_100km') kml = 100 / val;
+
+            if (to === 'km_l') return kml;
+            if (to === 'mpg_us') return kml / 0.425144;
+            if (to === 'mpg_uk') return kml / 0.354006;
+            if (to === 'l_100km') return 100 / kml;
+            return val;
+        }
+
+        function formatNumber(num) {
+            if (Math.abs(num) < 1e-6 || Math.abs(num) > 1e9) return num.toPrecision(6);
+            return parseFloat(num.toFixed(6));
+        }
+    </script>
+</body>
+</html>
+
+
