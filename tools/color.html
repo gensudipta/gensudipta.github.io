@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Picker | TranslitMedia</title>
+    <style>
+        :root {
+            /* LIGHT THEME */
+            --bg-color: #f9fafb; /* Light Gray Background */
+            --card-bg: #ffffff; /* Pure White Panels */
+            --text-primary: #1f2937; /* Dark Gray Text */
+            --text-secondary: #6b7280; /* Medium Gray Secondary Text */
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border: #e5e7eb; /* Light Border */
+            --input-bg: #f9fafb; /* Very Light Input Background */
+            --success: #22c55e;
+            --danger: #ef4444;
+            --nav-height: 48px; 
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        html, body {
+            height: 100%;
+            min-height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Nav */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 0.75rem; /* Minimized Padding */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: var(--nav-height);
+            flex-shrink: 0;
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 0.5rem; }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem; /* Icon only size */
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .back-btn:hover { background-color: var(--border); color: var(--text-primary); }
+
+        .brand { font-weight: 700; font-size: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+        .brand svg { width: 20px; height: 20px; stroke: var(--accent); }
+
+        /* Main Layout (MAXIMIZED & Consolidated) */
+        main {
+            flex: 1; 
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.5rem; /* Minimized Outer Padding */
+            display: grid;
+            grid-template-columns: 1fr 380px; 
+            gap: 0.5rem; /* Reduced Gap */
+            height: calc(100% - var(--nav-height));
+            overflow: hidden; 
+        }
+
+        /* Panels */
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem; /* Minimized Panel Padding */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* Minimized Panel Gap */
+            overflow-y: auto; 
+            height: 100%; 
+        }
+
+        /* --- LEFT/CENTER PANEL (Combined Tools & Library) --- */
+        #center-panel { order: 1; }
+        .tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; flex-shrink: 0; }
+        .tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.8rem; border-radius: 6px; flex: 1; display: flex; justify-content: center; align-items: center;}
+        .tab-btn.active { background-color: var(--input-bg); color: var(--accent); }
+        .tab-btn svg { width: 18px; height: 18px; }
+
+        .tab-content { flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 0.5rem; }
+        .tab-content.active { display: flex; } 
+        
+        /* Library Sub-Tabs */
+        .lib-tabs { display: flex; gap: 0.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; flex-shrink: 0; }
+        .lib-tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.3rem 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.7rem; border-radius: 6px; flex: 1; }
+        .lib-tab-btn.active { background-color: var(--input-bg); color: var(--accent); }
+
+        .lib-content { flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 0.4rem; }
+        .lib-content.active { display: flex; }
+
+        .color-search { width: 100%; padding: 0.5rem; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); margin-bottom: 0.4rem; flex-shrink: 0; }
+        .library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.3rem; } 
+        #lib-pantone .library-grid, #lib-mat .library-grid { grid-template-columns: 1fr; }
+        
+        .lib-item { display: flex; align-items: center; gap: 0.3rem; background: rgba(0,0,0,0.02); padding: 0.3rem; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+        .lib-item:hover { border-color: var(--accent); background: rgba(0,0,0,0.05); }
+        .lib-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+        .lib-name { font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; color: var(--text-primary); }
+
+        /* Image Picker */
+        .image-drop { 
+            border: 1px solid var(--border); border-radius: 8px; min-height: 200px; 
+            display: flex; align-items: center; justify-content: center; color: var(--text-secondary); 
+            cursor: default; 
+            position: relative; overflow: hidden; background-color: var(--input-bg); 
+            flex-grow: 1;
+        }
+        .image-drop canvas { width: 100%; height: 100%; object-fit: contain; cursor: crosshair; }
+        .img-controls { display: flex; gap: 0.4rem; flex-shrink: 0; }
+        .img-control-btn { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; flex: 1; }
+        .img-control-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+        
+        /* Contrast Checker */
+        .contrast-box { background: white; color: black; padding: 1rem; border-radius: 8px; text-align: center; transition: all 0.3s; border: 1px solid var(--border);}
+        .contrast-score { font-size: 2rem; font-weight: 800; margin: 0.4rem 0; }
+        .badge { display: inline-block; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin: 0 0.15rem; }
+             
+        /* --- RIGHT PANEL (Data & Harmonies) --- */
+        #data-panel { order: 2; padding: 0.75rem; /* Tighter Panel Padding */ }
+        
+        .visual-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem; /* Minimized Gap */
+            flex-shrink: 0;
+            margin-bottom: 0.4rem;
+        }
+
+        .color-hero {
+            height: 100px; 
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            
+            /* Checkered BG for Alpha Preview */
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+            
+            /* Name Display on Hero */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        
+        /* Z-INDEX FIX: Text needs z-index 2 to be over the overlay */
+        #heroClosestName { z-index: 2; position: relative; }
+
+        .color-hero input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 3; }
+        .color-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; pointer-events: none; z-index: 1; }
+        
+        /* Alpha Slider */
+        .alpha-control { flex-shrink: 0; padding: 0.2rem 0; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 0.4rem; }
+        .alpha-control label { flex-shrink: 0; margin: 0; font-size: 0.7rem; }
+        .alpha-range { flex: 1; -webkit-appearance: none; height: 6px; border-radius: 3px; }
+        .alpha-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--card-bg); }
+        #alphaValDisplay { width: 40px; text-align: right; font-size: 0.8rem; }
+        
+        /* Color Models / Harmonies Tab Wrapper */
+        .content-grid-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; 
+            overflow: hidden;
+        }
+
+        /* New Tab System */
+        .data-tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; flex-shrink: 0; }
+        .data-tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.3rem 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.8rem; border-radius: 6px; flex: 1; }
+        .data-tab-btn.active { background-color: var(--input-bg); color: var(--accent); }
+        
+        .data-content { flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 0.3rem; }
+        .data-content.active { display: flex; }
+
+        .section-title { font-size: 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); margin-bottom: 0.3rem; }
+        
+        /* Input Density */
+        .values-grid { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
+        .input-group { position: relative; }
+        .input-group label { display: block; color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; margin: 0; font-weight: 600; }
+        .input-group input { padding: 0.3rem; border-radius: 4px; font-family: monospace; font-size: 0.75rem; }
+        .copy-btn { top: 16px; }
+
+        /* Palette Density */
+        .palette-section { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; } 
+        .palette-row { display: flex; gap: 0.3rem; height: 25px; } 
+        .palette-swatch { flex: 1; border-radius: 4px; cursor: pointer; position: relative; transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.1); }
+
+        /* Mobile Optimization */
+        @media (max-width: 900px) {
+            main { 
+                grid-template-columns: 1fr; 
+                padding: 0.5rem; 
+                height: auto; 
+                min-height: calc(100% - var(--nav-height));
+                overflow: visible; 
+                gap: 0.5rem;
+            }
+
+            .panel { 
+                padding: 0.5rem; 
+                height: auto; 
+                max-height: 50vh; 
+                flex-shrink: 0;
+            }
+            
+            /* Mobile stacking order */
+            #data-panel { order: 1; max-height: none; } 
+            #center-panel { order: 2; }
+            
+            /* Content grid collapses to a single column stack on mobile */
+            .content-grid-wrapper {
+                grid-template-columns: 1fr;
+                gap: 0.75rem; 
+            }
+            
+            /* Fixed height for the tools/library sections on mobile */
+            #center-panel {
+                max-height: 50vh;
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </button>
+        </div>
+        <div class="brand">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+            </svg>
+            Color Picker
+        </div>
+        <div style="width: 32px;"></div>
+    </nav>
+
+    <main>
+        <!-- LEFT/CENTER PANEL: Combined Tools & Library -->
+        <div class="panel" id="center-panel">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('library', this)" title="Color Library">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                </button>
+                <button class="tab-btn" onclick="switchTab('contrast', this)" title="Contrast Checker">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                </button>
+                <button class="tab-btn" onclick="switchTab('image', this)" title="Image Picker">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </button>
+            </div>
+
+            <!-- 1. Library Content (DEFAULT) -->
+            <div id="tab-library" class="tab-content active">
+                <input type="text" id="libSearch" class="color-search" placeholder="Search color name..." oninput="filterLibrary()">
+                
+                <div class="lib-tabs">
+                    <button class="lib-tab-btn active" onclick="switchLibTab('css', this)">CSS</button>
+                    <button class="lib-tab-btn" onclick="switchLibTab('mat', this)">Material</button>
+                    <button class="lib-tab-btn" onclick="switchLibTab('pantone', this)">Pantone</button>
+                    <button class="lib-tab-btn" onclick="switchLibTab('ntc', this)">NTC</button>
+                </div>
+                
+                <!-- CSS Named Colors -->
+                <div id="lib-css" class="lib-content active">
+                    <div class="library-grid" id="css-lib"></div>
+                </div>
+                
+                <!-- Material Design -->
+                <div id="lib-mat" class="lib-content">
+                    <div class="library-grid" id="mat-lib"></div>
+                </div>
+
+                <!-- Pantone Solids (Popular) -->
+                <div id="lib-pantone" class="lib-content">
+                    <div class="library-grid" id="pantone-lib"></div>
+                </div>
+
+                <!-- NTC (Vast Named Colors) -->
+                <div id="lib-ntc" class="lib-content">
+                    <div class="library-grid" id="ntc-lib"></div>
+                </div>
+            </div>
+
+            <!-- 2. Contrast Tab -->
+            <div id="tab-contrast" class="tab-content">
+                <p style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                    Checks readability of foreground color against the current color (as background).
+                </p>
+                <div class="contrast-box" id="contrastPreview">
+                    <h3 class="contrast-score" id="contrastRatio">4.5:1</h3>
+                    <p>Test text readability</p>
+                </div>
+                <div style="margin-top:0.5rem; display:grid; gap:0.5rem;">
+                    <div class="input-group">
+                        <label>Text Color</label>
+                        <div style="display:flex; gap:0.4rem;">
+                            <input type="color" id="fgContrast" value="#ffffff" oninput="checkContrast()" style="width:40px; padding:0; border:none; height:35px;">
+                            <input type="text" id="fgContrastHex" value="#ffffff" readonly>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Background Color (Current RGBA)</label>
+                        <input type="text" id="bgContrastHex" value="rgba(99, 102, 241, 1.0)" readonly>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.8rem;">
+                        <span>AA: <span id="aa-norm" class="badge">--</span></span>
+                        <span>AAA: <span id="aaa-norm" class="badge">--</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Image Picker Tab -->
+            <div id="tab-image" class="tab-content">
+                <div class="img-controls">
+                    <button class="img-control-btn" onclick="document.getElementById('imgInput').click()">Upload Image</button>
+                    <button class="img-control-btn" onclick="clearImage()">Clear Image</button>
+                    <!-- HIDDEN FILE INPUT -->
+                    <input type="file" id="imgInput" accept="image/*" onchange="handleImage(this)" style="display:none;">
+                </div>
+                <div class="image-drop">
+                    <span id="dropText" style="z-index: 1;">Click "Upload Image" to extract colors.</span>
+                    <canvas id="imgCanvas" style="z-index: 0; display:none;"></canvas>
+                </div>
+                <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.3rem;">
+                    Click anywhere on the image above to pick color.
+                </p>
+            </div>
+        </div>
+        
+        <!-- RIGHT PANEL: Data & Harmonies -->
+        <div class="panel" id="data-panel">
+            
+            <div class="visual-area">
+                <!-- Color Hero -->
+                <div id="colorHero" class="color-hero">
+                    <span id="heroClosestName" style="color: #ffffff;">--</span>
+                    <div id="colorOverlay" class="color-overlay" style="background-color: rgba(99, 102, 241, 1);"></div>
+                    <input type="color" id="nativePicker" value="#6366f1">
+                </div>
+                
+
+                <!-- Alpha Control -->
+                <div class="alpha-control">
+                    <label>Alpha (A)</label>
+                    <input type="range" id="alphaRange" min="0" max="100" value="100" class="alpha-range" oninput="updateFromAlpha(this.value)">
+                    <span id="alphaValDisplay">100%</span>
+                </div>
+            </div>
+            
+            <div class="data-tabs">
+                <button class="data-tab-btn active" onclick="switchDataTab('models', this)">Color Models</button>
+                <button class="data-tab-btn" onclick="switchDataTab('harmonies', this)">Harmonies</button>
+            </div>
+            
+            <div class="content-grid-wrapper">
+                
+                <!-- 1. Color Models Content -->
+                <div id="data-models" class="data-content active">
+                    <div class="color-models-section">
+                        <div class="section-title" style="margin-top: 0.5rem;">Alpha (A) Inclusive</div>
+                        
+                        <!-- HEXA Alpha-Inclusive -->
+                        <div class="input-group">
+                            <label>HEXA</label>
+                            <input type="text" id="hexaInput" value="#6366F1FF" oninput="updateFromText('hexa', this.value)">
+                            <button class="copy-btn" onclick="copyVal('hexaInput')">📋</button>
+                        </div>
+                        <!-- RGBA Alpha-Inclusive -->
+                        <div class="input-group">
+                            <label>RGBA</label>
+                            <input type="text" id="rgbaInput" value="99, 102, 241, 1.0" oninput="updateFromText('rgba', this.value)">
+                            <button class="copy-btn" onclick="copyVal('rgbaInput')">📋</button>
+                        </div>
+                        
+                        <div class="section-title">Standard</div>
+                        
+                        <!-- HEX Alpha-Exclusive -->
+                        <div class="input-group">
+                            <label>HEX</label>
+                            <input type="text" id="hexInput" value="#6366F1" readonly>
+                            <button class="copy-btn" onclick="copyVal('hexInput')">📋</button>
+                        </div>
+                        <!-- RGB Alpha-Exclusive -->
+                        <div class="input-group">
+                            <label>RGB</label>
+                            <input type="text" id="rgbInput" value="99, 102, 241" readonly>
+                            <button class="copy-btn" onclick="copyVal('rgbInput')">📋</button>
+                        </div>
+
+
+                        <div class="input-group">
+                            <label>HSL</label>
+                            <input type="text" id="hslInput" value="239, 84%, 67%" oninput="updateFromText('hsl', this.value)">
+                            <button class="copy-btn" onclick="copyVal('hslInput')">📋</button>
+                        </div>
+                        <div class="input-group">
+                            <label>HSV</label>
+                            <input type="text" id="hsvInput" value="239, 59%, 95%" oninput="updateFromText('hsv', this.value)">
+                            <button class="copy-btn" onclick="copyVal('hsvInput')">📋</button>
+                        </div>
+                        <div class="input-group">
+                            <label>CMYK</label>
+                            <input type="text" id="cmykInput" value="59, 58, 0, 5" oninput="updateFromText('cmyk', this.value)">
+                            <button class="copy-btn" onclick="copyVal('cmykInput')">📋</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Harmonies Content -->
+                <div id="data-harmonies" class="data-content">
+                    <div class="palette-models-section">
+                        <div class="section-title" style="margin-top: 0.5rem;">Generated Palettes</div>
+                        <div class="palette-section">
+                            
+                            <label>Complementary</label>
+                            <div class="palette-row" id="pal-comp"></div>
+                            
+                            <label>Analogous</label>
+                            <div class="palette-row" id="pal-ana"></div>
+                            
+                            <label>Triadic</label>
+                            <div class="palette-row" id="pal-tri"></div>
+                            
+                            <label>Monochromatic</label>
+                            <div class="palette-row" id="pal-mono"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    <script>
+        // State: Stores R, G, B (0-255) and A (0.0 - 1.0)
+        let currentColor = { r: 99, g: 102, b: 241, a: 1.0 }; 
+        
+        // Data (Combined list for matching)
+        const cssColors = {"AliceBlue": "#F0F8FF", "AntiqueWhite": "#FAEBD7", "Aqua": "#00FFFF", "Aquamarine": "#7FFFD4", "Azure": "#F0FFFF", "Beige": "#F5F5DC", "Bisque": "#FFE4C4", "Black": "#000000", "BlanchedAlmond": "#FFEBCD", "Blue": "#0000FF", "BlueViolet": "#8A2BE2", "Brown": "#A52A2A", "BurlyWood": "#DEB887", "CadetBlue": "#5F9EA0", "Chartreuse": "#7FFF00", "Chocolate": "#D2691E", "Coral": "#FF7F50", "CornflowerBlue": "#6495ED", "Cornsilk": "#FFF8DC", "Crimson": "#DC143C", "Cyan": "#00FFFF", "DarkBlue": "#00008B", "DarkCyan": "#008B8B", "DarkGoldenRod": "#B8860B", "DarkGray": "#A9A9A9", "DarkGreen": "#006400", "DarkKhaki": "#BDB76B", "DarkMagenta": "#8B008B", "DarkOliveGreen": "#556B2F", "DarkOrange": "#FF8C00", "DarkOrchid": "#9932CC", "DarkRed": "#8B0000", "DarkSalmon": "#E9967A", "DarkSeaGreen": "#8FBC8F", "DarkSlateBlue": "#483D8B", "DarkSlateGray": "#2F4F4F", "DarkTurquoise": "#00CED1", "DarkViolet": "#9400D3", "DeepPink": "#FF1493", "DeepSkyBlue": "#00BFFF", "DimGray": "#696969", "DodgerBlue": "#1E90FF", "FireBrick": "#B22222", "FloralWhite": "#FFFAF0", "ForestGreen": "#228B22", "Fuchsia": "#FF00FF", "Gainsboro": "#DCDCDC", "GhostWhite": "#F8F8FF", "Gold": "#FFD700", "GoldenRod": "#DAA520", "Gray": "#808080", "Green": "#008000", "GreenYellow": "#ADFF2F", "HoneyDew": "#F0FFF0", "HotPink": "#FF69B4", "IndianRed": "#CD5C5C", "Indigo": "#4B0082", "Ivory": "#FFFFF0", "Khaki": "#F0E68C", "Lavender": "#E6E6FA", "LavenderBlush": "#FFF0F5", "LawnGreen": "#7CFC00", "LemonChiffon": "#FFFACD", "LightBlue": "#ADD8E6", "LightCoral": "#F08080", "LightCyan": "#E0FFFF", "LightGoldenRodYellow": "#FAFAD2", "LightGray": "#D3D3D3", "LightGreen": "#90EE90", "LightPink": "#FFB6C1", "LightSalmon": "#FFA07A", "LightSeaGreen": "#20B2AA", "LightSkyBlue": "#87CEFA", "LightSlateGray": "#778899", "LightSteelBlue": "#B0C4DE", "LightYellow": "#FFFFE0", "Lime": "#00FF00", "LimeGreen": "#32CD32", "Linen": "#FAF0E6", "Magenta": "#FF00FF", "Maroon": "#800080", "MediumAquaMarine": "#66CDAA", "MediumBlue": "#0000CD", "MediumOrchid": "#BA55D3", "MediumPurple": "#9370DB", "MediumSeaGreen": "#3CB371", "MediumSlateBlue": "#7B68EE", "MediumSpringGreen": "#00FA9A", "MediumTurquoise": "#48D1CC", "MediumVioletRed": "#C71585", "MidnightBlue": "#191970", "MintCream": "#F5FFFA", "MistyRose": "#FFE4E1", "Moccasin": "#FFE4B5", "NavajoWhite": "#FFDEAD", "Navy": "#000080", "OldLace": "#FDF5E6", "Olive": "#808000", "OliveDrab": "#6B8E23", "Orange": "#FFA500", "OrangeRed": "#FF4500", "Orchid": "#DA70D6", "PaleGoldenRod": "#EEE8AA", "PaleGreen": "#98FB98", "PaleTurquoise": "#AFEEEE", "PaleVioletRed": "#DB7093", "PapayaWhip": "#FFEFD5", "PeachPuff": "#FFDAB9", "Peru": "#CD853F", "Pink": "#FFC0CB", "Plum": "#DDA0DD", "PowderBlue": "#B0E0E6", "Purple": "#800080", "RebeccaPurple": "#663399", "Red": "#FF0000", "RosyBrown": "#BC8F8F", "RoyalBlue": "#4169E1", "SaddleBrown": "#8B4513", "Salmon": "#FA8072", "SandyBrown": "#F4A460", "SeaGreen": "#2E8B57", "SeaShell": "#FFF5EE", "Sienna": "#A0522D", "Silver": "#C0C0C0", "SkyBlue": "#87CEEB", "SlateBlue": "#6A5ACD", "SlateGray": "#708090", "Snow": "#FFFAFA", "SpringGreen": "#00FF7F", "SteelBlue": "#4682B4", "Tan": "#D2B48C", "Teal": "#008080", "Thistle": "#D8BFD8", "Tomato": "#FF6347", "Turquoise": "#40E0D0", "Violet": "#EE82EE", "Wheat": "#F5DEB3", "White": "#FFFFFF", "WhiteSmoke": "#F5F5F5", "Yellow": "#FFFF00", "YellowGreen": "#9ACD32"};
+        const materialColors = {"Mat Red": "#F44336", "Mat Pink": "#E91E63", "Mat Purple": "#9C27B0", "Mat Deep Purple": "#673AB7", "Mat Indigo": "#3F51B5", "Mat Blue": "#2196F3", "Mat Light Blue": "#03A9F4", "Mat Cyan": "#00BCD4", "Mat Teal": "#009688", "Mat Green": "#4CAF50", "Mat Light Green": "#8BC34A", "Mat Lime": "#CDDC39", "Mat Yellow": "#FFEB3B", "Mat Amber": "#FFC107", "Mat Orange": "#FF9800", "Mat Deep Orange": "#FF5722", "Mat Brown": "#795548", "Mat Grey": "#9E9E9E", "Mat Blue Grey": "#607D8B"};
+        const pantoneColors = {"PANTONE 18-3224 TCX (Radiant Orchid)": "#B33F87", "PANTONE 17-5641 (Emerald)": "#009473", "PANTONE 17-5104 (Ultimate Gray)": "#9AA3AE", "PANTONE 13-0647 (Illuminating)": "#F5DF4D", "PANTONE 19-4052 (Classic Blue)": "#0F4C81", "PANTONE 16-1546 (Living Coral)": "#FF6F61", "PANTONE 15-0343 (Greenery)": "#88B04B", "PANTONE 18-3838 (Ultra Violet)": "#5F4B8B"};
+        const ntcColors = {"Indian Red": "#4e82af", "Light Coral": "#f08080", "Salmon": "#fa8072", "Dark Salmon": "#e9967a", "Light Salmon": "#ffa07a", "Crimson": "#dc143c", "Red": "#ff0000", "FireBrick": "#b22222", "Dark Red": "#8b0000", "Pink": "#ffc0cb", "Light Pink": "#ffb6c1", "Hot Pink": "#ff69b4", "Deep Pink": "#ff1493", "Medium Violet Red": "#c71585", "Pale Violet Red": "#db7093", "Coral": "#ff7f50", "Tomato": "#ff6347", "Orange Red": "#ff4500", "Dark Orange": "#ff8c00", "Orange": "#ffa500", "Gold": "#ffd700", "Yellow": "#ffff00", "Light Yellow": "#ffffe0", "Lemon Chiffon": "#fffacd", "Light Golden Rod Yellow": "#fafad2", "Papaya Whip": "#ffefd5", "Moccasin": "#ffe4b5", "Peach Puff": "#ffdab9", "Pale Golden Rod": "#eee8aa", "Khaki": "#f0e68c", "Dark Khaki": "#bdb76b", "Lavender": "#e6e6fa", "Thistle": "#d8bfd8", "Plum": "#dda0dd", "Violet": "#ee82ee", "Orchid": "#da70d6", "Fuchsia": "#ff00ff", "Magenta": "#ff00ff", "Medium Orchid": "#ba55d3", "Medium Purple": "#9370db", "Rebecca Purple": "#663399", "Blue Violet": "#8a2be2", "Dark Violet": "#9400d3", "Dark Orchid": "#9932cc", "Dark Magenta": "#8b008b", "Purple": "#800080", "Indigo": "#4b0082", "Slate Blue": "#6a5acd", "Dark Slate Blue": "#483d8b", "Medium Slate Blue": "#7b68ee", "Green Yellow": "#adff2f", "Chartreuse": "#7fff00", "Lawn Green": "#7cfc00", "Lime": "#00ff00", "Lime Green": "#32cd32", "Pale Green": "#98fb98", "Light Green": "#90ee90", "Medium Spring Green": "#00fa9a", "Spring Green": "#00ff7f", "Medium Sea Green": "#3cb371", "Sea Green": "#2e8b57", "Forest Green": "#228b22", "Green": "#008000", "Dark Green": "#006400", "Yellow Green": "#9acd32", "Olive Drab": "#6b8e23", "Olive": "#808000", "Dark Olive Green": "#556b2f", "Medium Aqua Marine": "#66cdaa", "Dark Sea Green": "#8fbc8f", "Light Sea Green": "#20b2aa", "Dark Cyan": "#008b8b", "Teal": "#008080", "Aqua": "#00ffff", "Cyan": "#00ffff", "Light Cyan": "#e0ffff", "Pale Turquoise": "#afeeee", "Aqua Marine": "#7fffd4", "Turquoise": "#40e0d0", "Medium Turquoise": "#48d1cc", "Dark Turquoise": "#00ced1", "Cadet Blue": "#5f9ea0", "Steel Blue": "#4682b4", "Light Steel Blue": "#b0c4de", "Powder Blue": "#b0e0e6", "Light Blue": "#add8e6", "Sky Blue": "#87ceeb", "Light Sky Blue": "#87cefa", "Deep Sky Blue": "#00bfff", "Dodger Blue": "#1e90ff", "Cornflower Blue": "#6495ed", "Royal Blue": "#4169e1", "Blue": "#0000ff", "Medium Blue": "#0000cd", "Dark Blue": "#00008b", "Navy": "#000080"};
+
+        const ALL_COLORS = { ...cssColors, ...materialColors, ...pantoneColors, ...ntcColors };
+        const LIBRARY_TYPES = {
+            'css': 'CSS', 'mat': 'Material', 'pantone': 'Pantone', 'ntc': 'NTC'
+        };
+
+        // DOM Elements
+        const picker = document.getElementById('nativePicker');
+        const colorOverlay = document.getElementById('colorOverlay');
+        const alphaRange = document.getElementById('alphaRange');
+        const heroClosestName = document.getElementById('heroClosestName');
+        
+        // Init
+        initLibrary();
+        updateAll(currentColor);
+
+        // --- Event Listeners ---
+        picker.addEventListener('input', (e) => {
+            const rgb = hexToRgb(e.target.value);
+            updateAll({ ...rgb, a: currentColor.a });
+        });
+        
+        // --- Color Matching Logic (Euclidean distance on RGB) ---
+        function getClosestColorName(targetR, targetG, targetB) {
+            let closestName = "Select a color";
+            let minDistanceSq = Infinity;
+            let closestType = "";
+            
+            // Function to determine the library type based on the color map
+            const findColorType = (name) => {
+                if (cssColors[name]) return 'CSS';
+                if (materialColors[name]) return 'Material';
+                if (pantoneColors[name]) return 'Pantone';
+                if (ntcColors[name]) return 'NTC';
+                return '';
+            };
+
+            for (const [name, hex] of Object.entries(ALL_COLORS)) {
+                const { r, g, b } = hexToRgb(hex);
+                const dr = targetR - r;
+                const dg = targetG - g;
+                const db = targetB - b;
+                const distanceSq = dr * dr + dg * dg + db * db;
+
+                if (distanceSq < minDistanceSq) {
+                    minDistanceSq = distanceSq;
+                    closestName = name;
+                }
+            }
+            
+            closestType = findColorType(closestName);
+            const distance = Math.sqrt(minDistanceSq);
+            
+            // Use a threshold for visual similarity
+            if (minDistanceSq < 3000) {
+                return `${closestName} (${closestType} | D: ${distance.toFixed(1)})`;
+            } else {
+                return closestName; // Too far to be considered a named match
+            }
+        }
+
+
+        // --- Logic ---
+
+        function updateFromAlpha(alphaPercent) {
+            const a = parseFloat(alphaPercent) / 100.0;
+            currentColor.a = a;
+            updateAll(currentColor, false);
+        }
+
+        function updateAll(color, updatePicker = true) {
+            if(!color) return;
+            currentColor = color;
+            
+            const hex = rgbToHex(color.r, color.g, color.b);
+            const hexa = rgbToHexa(color.r, color.g, color.b, color.a);
+            const rgbString = `${color.r}, ${color.g}, ${color.b}`;
+            const hsl = rgbToHsl(color.r, color.g, color.b);
+            const hsv = rgbToHsv(color.r, color.g, color.b);
+            const cmyk = rgbToCmyk(color.r, color.g, color.b);
+            const rgbaString = `rgba(${rgbString}, ${color.a.toFixed(2)})`;
+
+            // Determine contrast color for text on the hero
+            const bgLum = luminance(color.r, color.g, color.b);
+            const contrastTextColor = bgLum > 0.179 ? '#000000' : '#ffffff';
+
+            // Update Main Display
+            if (updatePicker) picker.value = hex;
+            colorOverlay.style.backgroundColor = rgbaString;
+            alphaRange.style.background = `linear-gradient(to right, rgba(${color.r}, ${color.g}, ${color.b}, 0), ${hex})`;
+            
+            // Update Alpha Control
+            document.getElementById('alphaValDisplay').innerText = `${Math.round(color.a * 100)}%`;
+            alphaRange.value = Math.round(color.a * 100);
+
+            // Update Color Hero Title/Name (Inverted Text Color Fix)
+            const closestName = getClosestColorName(color.r, color.g, color.b);
+            heroClosestName.innerText = closestName;
+            heroClosestName.style.color = contrastTextColor;
+
+            // Update Inputs
+            document.getElementById('hexaInput').value = hexa;
+            document.getElementById('rgbaInput').value = rgbaString;
+            
+            document.getElementById('hexInput').value = hex; // Alpha-exclusive
+            document.getElementById('rgbInput').value = rgbString; // Alpha-exclusive
+
+            document.getElementById('hslInput').value = `${hsl.h}, ${hsl.s}%, ${hsl.l}%`;
+            document.getElementById('hsvInput').value = `${hsv.h}, ${hsv.s}%, ${hsv.v}%`;
+            document.getElementById('cmykInput').value = `${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}`;
+
+            // Palettes/Contrast
+            generatePalettes(hsl);
+            document.getElementById('bgContrastHex').value = rgbaString;
+            checkContrast();
+        }
+
+        function updateFromText(type, val) {
+            let rgb = null;
+            let a = currentColor.a; 
+            
+            try {
+                if (type === 'hexa') {
+                    const parsed = hexaToRgba(val);
+                    rgb = {r: parsed.r, g: parsed.g, b: parsed.b};
+                    a = parsed.a;
+                } else if (type === 'rgb') {
+                    const parts = val.split(',').map(p => parseFloat(p.trim()));
+                    if (parts.length === 3) rgb = { r: parts[0], g: parts[1], b: parts[2] };
+                } else if (type === 'rgba') {
+                    const parts = val.replace(/[rgba()% ]/g, '').split(',').map(p => parseFloat(p.trim()));
+                    if (parts.length >= 3) {
+                         rgb = { r: parts[0], g: parts[1], b: parts[2] };
+                         a = parts.length === 4 ? parts[3] : 1.0;
+                    }
+                } else if (type === 'hex') {
+                    rgb = hexToRgb(val);
+                } else if (type === 'hsl') {
+                    const parts = val.replace(/[hsl()% ]/g, '').split(',').map(p => parseFloat(p.trim()));
+                    rgb = hslToRgb(parts[0], parts[1], parts[2]);
+                } else if (type === 'hsv') {
+                    const parts = val.replace(/[hsv()% ]/g, '').split(',').map(p => parseFloat(p.trim()));
+                    rgb = hsvToRgb(parts[0], parts[1], parts[2]);
+                } else if (type === 'cmyk') {
+                    const parts = val.replace(/[cmyk()% ]/g, '').split(',').map(p => parseFloat(p.trim()));
+                    rgb = cmykToRgb(parts[0], parts[1], parts[2], parts[3]);
+                }
+            } catch(e) { console.error("Parse error:", e); }
+            
+            if (rgb) updateAll({ ...rgb, a: a });
+        }
+        
+        // --- Color Math (standard) ---
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        function componentToHex(c) {
+            const hex = c.toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        }
+        
+        function rgbToHexa(r, g, b, a) {
+            const hexR = componentToHex(r);
+            const hexG = componentToHex(g);
+            const hexB = componentToHex(b);
+            const hexA = componentToHex(Math.round(a * 255));
+            return `#${hexR}${hexG}${hexB}${hexA}`.toUpperCase();
+        }
+        
+        function hexaToRgba(hexa) {
+            const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexa);
+            if (!match) throw new Error("Invalid HEXA format");
+            return {
+                r: parseInt(match[1], 16),
+                g: parseInt(match[2], 16),
+                b: parseInt(match[3], 16),
+                a: parseInt(match[4], 16) / 255.0
+            };
+        }
+        
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) h = s = 0;
+            else {
+                const d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+        }
+
+        function hslToRgb(h, s, l) {
+            h /= 360; s /= 100; l /= 100;
+            let r, g, b;
+            if (s === 0) r = g = b = l;
+            else {
+                const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q; r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+            }
+            return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+        }
+        
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+            const d = max - min; s = max === 0 ? 0 : d / max;
+            if (max === min) h = 0;
+            else {
+                switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), v: Math.round(v * 100) };
+        }
+
+        function hsvToRgb(h, s, v) {
+            s /= 100; v /= 100; h /= 60;
+            const i = Math.floor(h); const f = h - i; const p = v * (1 - s); const q = v * (1 - f * s); const t = v * (1 - (1 - f) * s);
+            let r, g, b; switch (i % 6) { case 0: r = v, g = t, b = p; break; case 1: r = q, g = v, b = p; break; case 2: r = p, g = v, b = t; break; case 3: r = p, g = q, b = v; break; case 4: r = t, g = p, b = v; break; case 5: r = v, g = p, b = q; break; }
+            return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+        }
+
+        function rgbToCmyk(r, g, b) {
+            let c = 1 - (r / 255), m = 1 - (g / 255), y = 1 - (b / 255), k = Math.min(c, m, y);
+            c = (c - k) / (1 - k) || 0; m = (m - k) / (1 - k) || 0; y = (y - k) / (1 - k) || 0;
+            return { c: Math.round(c * 100), m: Math.round(m * 100), y: Math.round(y * 100), k: Math.round(k * 100) };
+        }
+        
+        function cmykToRgb(c, m, y, k) {
+            c /= 100; m /= 100; y /= 100; k /= 100;
+            const r = 255 * (1 - c) * (1 - k); const g = 255 * (1 - m) * (1 - k); const b = 255 * (1 - y) * (1 - k);
+            return { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
+        }
+
+
+        // --- Palettes and Library (unchanged logic) ---
+
+        function generatePalettes(hsl) {
+            const h = hsl.h;
+            const complementaryHues = [h, (h + 180) % 360];
+            const analogousHues = [(h - 30 + 360) % 360, h, (h + 30) % 360];
+            const triadicHues = [h, (h + 120) % 360, (h + 240) % 360];
+
+            renderHarmonyRow('pal-comp', complementaryHues, hsl);
+            renderHarmonyRow('pal-ana', analogousHues, hsl);
+            renderHarmonyRow('pal-tri', triadicHues, hsl);
+
+            const monoEl = document.getElementById('pal-mono');
+            monoEl.innerHTML = '';
+            [10, 30, 50, 70, 90].forEach(light => {
+                const rgb = hslToRgb(h, hsl.s, light);
+                const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+                const div = createSwatch(rgb, hex);
+                monoEl.appendChild(div);
+            });
+        }
+        
+        function renderHarmonyRow(id, hues, baseHsl) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            hues.forEach(hue => {
+                const rgb = hslToRgb(hue, baseHsl.s, baseHsl.l);
+                const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+                const div = createSwatch(rgb, hex);
+                el.appendChild(div);
+            });
+        }
+        
+        function createSwatch(rgb, hex) {
+            const div = document.createElement('div');
+            div.className = 'palette-swatch';
+            div.style.backgroundColor = hex;
+            div.setAttribute('data-color', hex);
+            div.onclick = () => updateAll({ ...rgb, a: currentColor.a });
+            return div;
+        }
+        // --- Library ---
+
+        function initLibrary() {
+            renderGrid('css-lib', cssColors);
+            renderGrid('mat-lib', materialColors);
+            renderGrid('pantone-lib', pantoneColors);
+            renderGrid('ntc-lib', ntcColors);
+            
+            // Set default active tab for library
+            document.getElementById('lib-css').classList.add('active');
+            document.querySelector('#tab-library .lib-tabs .lib-tab-btn').classList.add('active');
+        }
+
+        function renderGrid(id, colors) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            for (const [name, hex] of Object.entries(colors)) {
+                const item = document.createElement('div');
+                item.className = 'lib-item';
+                item.onclick = () => updateAll({ ...hexToRgb(hex), a: currentColor.a });
+                item.innerHTML = `
+                    <div class="lib-swatch" style="background:${hex}"></div>
+                    <span class="lib-name">${name}</span>
+                `;
+                el.appendChild(item);
+            }
+        }
+
+        function filterLibrary() {
+            const query = document.getElementById('libSearch').value.toLowerCase();
+            
+            // Find the currently active library content area
+            const activeLib = document.querySelector('.lib-content.active');
+            if (!activeLib) return;
+
+            activeLib.querySelectorAll('.lib-item').forEach(item => {
+                const name = item.querySelector('.lib-name').innerText.toLowerCase();
+                item.style.display = name.includes(query) ? 'flex' : 'none';
+            });
+        }
+        
+        function switchLibTab(t, el) {
+            document.querySelectorAll('#tab-library .lib-content').forEach(e => e.classList.remove('active'));
+            document.getElementById('lib-' + t).classList.add('active');
+            document.querySelectorAll('#tab-library .lib-tab-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Clear search filter when switching tabs
+            document.getElementById('libSearch').value = '';
+            filterLibrary();
+        }
+
+        // --- Features ---
+        function checkContrast() {
+            const fgHex = document.getElementById('fgContrast').value;
+            const bgRgb = currentColor; 
+
+            document.getElementById('fgContrastHex').value = fgHex;
+            
+            const fg = hexToRgb(fgHex);
+            
+            const lum1 = luminance(fg.r, fg.g, fg.b);
+            const lum2 = luminance(bgRgb.r, bgRgb.g, bgRgb.b);
+            
+            const ratio = (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+            
+            document.getElementById('contrastRatio').innerText = ratio.toFixed(2) + ":1";
+            
+            // Set text color for contrast preview based on selected BG luminance
+            const bgLum = luminance(bgRgb.r, bgRgb.g, bgRgb.b);
+            document.getElementById('contrastPreview').style.color = bgLum > 0.179 ? '#000000' : '#ffffff';
+            document.getElementById('contrastPreview').style.backgroundColor = rgbToHex(bgRgb.r, bgRgb.g, bgRgb.b);
+
+            
+            const setBadge = (id, pass) => {
+                const el = document.getElementById(id);
+                el.innerText = pass ? "PASS" : "FAIL";
+                el.className = "badge " + (pass ? "pass" : "fail");
+            };
+            setBadge('aa-norm', ratio >= 4.5);
+            setBadge('aaa-norm', ratio >= 7);
+        }
+
+        function luminance(r, g, b) {
+            return [r, g, b].map(v => {
+                v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            }).reduce((a, b, i) => a + b * [0.2126, 0.7152, 0.0722][i], 0);
+        }
+
+        // Image Picker
+        const imgCanvas = document.getElementById('imgCanvas');
+        const ctx = imgCanvas.getContext('2d');
+
+        function handleImage(input) {
+            if(!input.files[0]) return;
+            document.getElementById('dropText').style.display = 'none';
+            imgCanvas.style.display = 'block';
+
+            const img = new Image();
+            img.onload = () => {
+                // Determine scale factor to draw image while maintaining aspect ratio
+                const MAX_HEIGHT = 250;
+                let width = img.width;
+                let height = img.height;
+                
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+
+                // Set canvas internal resolution to actual pixel dimensions
+                imgCanvas.width = img.width; 
+                imgCanvas.height = img.height;
+                
+                // Draw the image onto the canvas
+                ctx.drawImage(img, 0, 0);
+
+                // Set the canvas CSS size for display (scaling down the high-res image)
+                imgCanvas.style.height = `${height}px`;
+                imgCanvas.style.width = `${width}px`;
+
+                // Set image drop dimensions based on scaled image
+                const dropEl = document.querySelector('.image-drop');
+                dropEl.style.minHeight = 'auto';
+                dropEl.style.height = `${height}px`;
+
+
+            };
+            // Set crossOrigin to anonymous to allow getImageData (even if image is local)
+            img.crossOrigin = "anonymous";
+            img.src = URL.createObjectURL(input.files[0]);
+        }
+        
+        function clearImage() {
+             imgCanvas.width = 1;
+             imgCanvas.height = 1;
+             ctx.clearRect(0, 0, 1, 1);
+             document.getElementById('imgInput').value = '';
+             document.getElementById('dropText').style.display = 'block';
+             imgCanvas.style.display = 'none'; // Hide canvas when cleared
+             
+             // Reset container height
+             const dropEl = document.querySelector('.image-drop');
+             dropEl.style.minHeight = '250px';
+             dropEl.style.height = 'auto';
+        }
+
+        imgCanvas.addEventListener('click', (e) => {
+            if (imgCanvas.style.display === 'none') return; // Only pick if canvas is visible
+
+            const rect = imgCanvas.getBoundingClientRect();
+            
+            // Calculate scale factor using the INTERNAL canvas dimensions vs the DISPLAYED dimensions
+            const scaleX = imgCanvas.width / rect.width;
+            const scaleY = imgCanvas.height / rect.height;
+            
+            // Get pixel coordinates on the internal canvas (must be integers)
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            
+            // Safety check for bounds
+            if (x < 0 || x >= imgCanvas.width || y < 0 || y >= imgCanvas.height) return;
+
+            // Get pixel data
+            const p = ctx.getImageData(x, y, 1, 1).data;
+            
+            // Check if context is empty (transparent, 0 alpha)
+            if (p[3] === 0) return; 
+
+            // Update main color
+            updateAll({ r: p[0], g: p[1], b: p[2], a: 1.0 });
+        });
+
+        // Tabs & Utils
+        function switchTab(t, el) {
+            document.querySelectorAll('#center-panel .tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById('tab-' + t).classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Special actions after switching tabs
+            if (t === 'contrast') {
+                checkContrast();
+            } else if (t === 'library') {
+                 // Ensure the current library sub-tab is marked active when switching back
+                const activeLibTab = document.querySelector('#tab-library .lib-tabs .lib-tab-btn.active');
+                if (!activeLibTab) {
+                    switchLibTab('css', document.querySelector('#tab-library .lib-tabs .lib-tab-btn:nth-child(1)'));
+                }
+            }
+        }
+        
+        function switchDataTab(t, el) {
+            document.querySelectorAll('#data-panel .data-content').forEach(e => e.classList.remove('active'));
+            document.getElementById('data-' + t).classList.add('active');
+            document.querySelectorAll('.data-tab-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function copyVal(id) {
+            document.getElementById(id).select();
+            document.execCommand('copy');
+        }
+    </script>
+</body>
+</html>
+
