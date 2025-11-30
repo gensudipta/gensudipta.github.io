@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder | TranslitMedia</title>
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: #1e293b; /* Slate 800 */
+            --text-primary: #f1f5f9; /* Slate 100 */
+            --text-secondary: #94a3b8; /* Slate 400 */
+            --accent: #6366f1; /* Indigo 500 */
+            --accent-hover: #4f46e5; /* Indigo 600 */
+            --border: #334155; /* Slate 700 */
+            --danger: #ef4444;
+            --success: #22c55e;
+            --input-bg: rgba(0,0,0,0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .brand svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem 1.5rem;
+        }
+
+        .tool-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        /* Content Areas */
+        .tab-content {
+            display: none;
+            padding: 1.5rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn.primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn.clear {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+            margin-left: auto;
+        }
+
+        /* Image Upload Zone */
+        .drop-zone {
+            width: 100%;
+            height: 150px;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--input-bg);
+            margin-bottom: 1.5rem;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .drop-zone svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Preview Area */
+        .preview-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: rgba(0,0,0,0.3);
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+        }
+        
+        .preview-placeholder {
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--success);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </button>
+        </div>
+        <div class="brand">
+            <!-- Specific Icon for Base64 -->
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+            </svg>
+            Base64 Encoder
+        </div>
+        <div style="width: 70px;"></div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <div class="tool-container">
+            
+            <!-- Tab Headers -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('text')">Text Converter</button>
+                <button class="tab-btn" onclick="switchTab('image')">Image Converter</button>
+            </div>
+
+            <!-- Text Converter Tab -->
+            <div id="tab-text" class="tab-content active">
+                <div class="form-group">
+                    <label class="label-row">Input</label>
+                    <textarea id="textInput" placeholder="Type text to encode, or paste Base64 to decode..."></textarea>
+                </div>
+
+                <div class="controls">
+                    <button class="btn primary" onclick="encodeText()">Encode to Base64</button>
+                    <button class="btn" onclick="decodeText()">Decode from Base64</button>
+                    <button class="btn clear" onclick="clearTextFields()">Clear</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="label-row">
+                        Output
+                        <button class="icon-btn" style="background:none; border:none; color:var(--accent); cursor:pointer;" onclick="copyOutput('textOutput')">Copy</button>
+                    </label>
+                    <textarea id="textOutput" readonly placeholder="Result will appear here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Image Converter Tab -->
+            <div id="tab-image" class="tab-content">
+                
+                <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Click to upload or drag image here</span>
+                    <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(this)">
+                </div>
+
+                <div class="form-group">
+                    <label class="label-row">
+                        Base64 String Output
+                        <button class="icon-btn" style="background:none; border:none; color:var(--accent); cursor:pointer;" onclick="copyOutput('imageOutput')">Copy</button>
+                    </label>
+                    <textarea id="imageOutput" readonly placeholder="Base64 string will appear here..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Image Preview</label>
+                    <div id="imagePreview" class="preview-box">
+                        <span class="preview-placeholder">No image loaded</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Copied to clipboard!
+    </div>
+
+    <script>
+        // Tab Logic
+        function switchTab(tabName) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Activate selected
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // Find button containing text and activate it (simple approximation)
+            const buttons = document.querySelectorAll('.tab-btn');
+            if(tabName === 'text') buttons[0].classList.add('active');
+            else buttons[1].classList.add('active');
+        }
+
+        // --- Text Logic ---
+        
+        // Helper to handle UTF-8 strings correctly
+        function utf8_to_b64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
+
+        function b64_to_utf8(str) {
+            return decodeURIComponent(escape(window.atob(str)));
+        }
+
+        function encodeText() {
+            const input = document.getElementById('textInput').value;
+            const output = document.getElementById('textOutput');
+            try {
+                if(!input) { output.value = ""; return; }
+                output.value = utf8_to_b64(input);
+            } catch (e) {
+                output.value = "Error: Unable to encode text.";
+            }
+        }
+
+        function decodeText() {
+            const input = document.getElementById('textInput').value.trim();
+            const output = document.getElementById('textOutput');
+            try {
+                if(!input) { output.value = ""; return; }
+                output.value = b64_to_utf8(input);
+            } catch (e) {
+                output.value = "Error: Invalid Base64 string.";
+            }
+        }
+
+        function clearTextFields() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('textOutput').value = '';
+        }
+
+        // --- Image Logic ---
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const base64String = e.target.result;
+                    
+                    // Set textarea
+                    document.getElementById('imageOutput').value = base64String;
+                    
+                    // Set preview
+                    const previewBox = document.getElementById('imagePreview');
+                    previewBox.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = base64String;
+                    previewBox.appendChild(img);
+                };
+
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Handle Drag and Drop
+        const dropZone = document.querySelector('.drop-zone');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent)';
+            dropZone.style.backgroundColor = 'rgba(99, 102, 241, 0.1)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            dropZone.style.backgroundColor = 'var(--input-bg)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            dropZone.style.backgroundColor = 'var(--input-bg)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                document.getElementById('fileInput').files = files;
+                handleImageUpload(document.getElementById('fileInput'));
+            }
+        });
+
+
+        // --- Shared Logic ---
+
+        function copyOutput(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el.value) return;
+
+            el.select();
+            document.execCommand('copy');
+            
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
+
