@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter | TranslitMedia</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --input-bg: rgba(0,0,0,0.3);
+            --gutter-bg: #182235;
+            
+            /* Syntax Highlighting Colors */
+            --json-key: #9cdcfe;
+            --json-string: #ce9178;
+            --json-number: #b5cea8;
+            --json-boolean: #569cd6;
+            --json-null: #569cd6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 0.5rem; }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .back-btn:hover { background-color: var(--border); color: var(--text-primary); }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .brand svg { width: 20px; height: 20px; stroke: var(--accent); }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: calc(100vh - 60px);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            background: var(--card-bg);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { border-color: var(--accent); color: var(--text-primary); }
+        
+        .btn.primary { background-color: var(--accent); color: white; border-color: var(--accent); }
+        .btn.primary:hover { background-color: var(--accent-hover); }
+
+        .btn svg { width: 16px; height: 16px; }
+
+        .checkbox-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            user-select: none;
+        }
+        .checkbox-btn input { margin: 0; cursor: pointer; }
+        .checkbox-btn:hover { color: var(--text-primary); }
+
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+
+        /* Editor Area */
+        .editors {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            flex: 1;
+            min-height: 0; /* Important for flex child scrolling */
+        }
+
+        .editor-pane {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            overflow: hidden;
+        }
+
+        .pane-header {
+            padding: 0.5rem 1rem;
+            background-color: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        /* Editor Body with Gutter */
+        .pane-body {
+            display: flex;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--bg-color);
+        }
+
+        .gutter {
+            width: 45px;
+            background-color: var(--gutter-bg);
+            border-right: 1px solid var(--border);
+            color: #64748b;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5; /* Must match textarea line-height */
+            text-align: right;
+            padding: 1rem 0.5rem 1rem 0;
+            user-select: none;
+            overflow: hidden; /* Hide scrollbar */
+            flex-shrink: 0;
+        }
+
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: auto; /* Scroll here */
+        }
+
+        textarea, .code-view {
+            width: 100%;
+            min-height: 100%; /* Allow content to grow */
+            background-color: transparent;
+            color: var(--text-primary);
+            border: none;
+            padding: 1rem;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5; /* Must match gutter line-height */
+            resize: none;
+            outline: none;
+            white-space: pre;
+            overflow: hidden; /* Let container handle scroll */
+            display: block;
+        }
+
+        /* Remove default margin/padding quirks */
+        textarea { margin: 0; }
+
+        /* Syntax Highlighting */
+        .key { color: var(--json-key); }
+        .string { color: var(--json-string); }
+        .number { color: var(--json-number); }
+        .boolean { color: var(--json-boolean); }
+        .null { color: var(--json-null); }
+
+        /* Error Box */
+        .error-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(239, 68, 68, 0.95);
+            color: white;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            font-family: monospace;
+            z-index: 10;
+        }
+        .error-overlay.show { transform: translateY(0); }
+
+        /* Status Pill */
+        .status-pill {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+        }
+        .status-pill.valid { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .status-pill.invalid { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .editors { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            main { height: auto; min-height: calc(100vh - 60px); }
+            .pane-body { min-height: 300px; }
+            .toolbar { overflow-x: auto; padding-bottom: 0.5rem; }
+            .btn { white-space: nowrap; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </button>
+        </div>
+        <div class="brand">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+            JSON Formatter
+        </div>
+        <div style="width: 70px;"></div>
+    </nav>
+
+    <main>
+        
+        <div class="toolbar">
+            <button class="btn primary" onclick="formatJSON(2)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                Format
+            </button>
+            <button class="btn" onclick="minifyJSON()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Minify
+            </button>
+            <button class="btn" onclick="fixJSON()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Repair
+            </button>
+            <label class="checkbox-btn">
+                <input type="checkbox" id="autoFormat"> Auto
+            </label>
+            <div style="width:1px; height:20px; background:var(--border); margin:0 0.5rem;"></div>
+            <div class="file-input-wrapper btn">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Upload
+                <input type="file" id="fileInput" accept=".json,.txt" onchange="handleFileUpload(this)">
+            </div>
+            <button class="btn" onclick="downloadJSON()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Download
+            </button>
+            <button class="btn" onclick="clearAll()" style="color:var(--danger); border-color:var(--danger); margin-left:auto;">
+                Clear
+            </button>
+        </div>
+
+        <div class="editors">
+            <!-- INPUT PANE -->
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <span>Input (Raw)</span>
+                    <span id="input-status" class="status-pill">Empty</span>
+                </div>
+                <div class="pane-body">
+                    <div class="gutter" id="input-gutter">1</div>
+                    <div class="content-area" id="input-scroller">
+                        <textarea id="jsonInput" placeholder="Paste JSON, Objects, or Arrays here..." spellcheck="false"></textarea>
+                    </div>
+                    <div id="errorBox" class="error-overlay"></div>
+                </div>
+            </div>
+
+            <!-- OUTPUT PANE -->
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <span>Output (Formatted)</span>
+                    <button class="btn" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="copyOutput()">Copy</button>
+                </div>
+                <div class="pane-body">
+                    <div class="gutter" id="output-gutter">1</div>
+                    <div class="content-area" id="output-scroller">
+                        <div id="jsonOutput" class="code-view" contenteditable="false"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const errorBox = document.getElementById('errorBox');
+        const inputStatus = document.getElementById('input-status');
+        const autoFormatCheckbox = document.getElementById('autoFormat');
+        
+        // Gutters & Scrollers
+        const inputGutter = document.getElementById('input-gutter');
+        const outputGutter = document.getElementById('output-gutter');
+        const inputScroller = document.getElementById('input-scroller');
+        const outputScroller = document.getElementById('output-scroller');
+
+        // Sync Scrolling
+        inputScroller.addEventListener('scroll', () => { inputGutter.scrollTop = inputScroller.scrollTop; });
+        outputScroller.addEventListener('scroll', () => { outputGutter.scrollTop = outputScroller.scrollTop; });
+
+        // Initial sample
+        const sampleJSON = {
+            "tool": "JSON Formatter",
+            "active": true,
+            "version": 1.0,
+            "features": ["Beautify", "Minify", "Validate"],
+            "nullValue": null
+        };
+        jsonInput.value = JSON.stringify(sampleJSON, null, 2);
+        updateGutter(jsonInput.value, inputGutter);
+        formatJSON(2);
+
+        // --- Core Functions ---
+
+        function updateGutter(text, gutterEl) {
+            const lines = text.split(/\r*\n/).length;
+            let gutterHtml = '';
+            for(let i=1; i<=lines; i++) {
+                gutterHtml += i + '\n';
+            }
+            gutterEl.innerText = gutterHtml; 
+        }
+
+        function formatJSON(indent) {
+            const raw = jsonInput.value;
+            updateGutter(raw, inputGutter);
+
+            if(!raw.trim()) {
+                clearAll();
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(raw);
+                const formatted = JSON.stringify(parsed, null, indent);
+                
+                // Highlight syntax
+                jsonOutput.innerHTML = syntaxHighlight(formatted);
+                
+                // Update Output Gutter
+                updateGutter(formatted, outputGutter);
+
+                // Update UI state
+                showError(null);
+                updateStatus(true);
+            } catch (e) {
+                showError(e.message);
+                updateStatus(false);
+            }
+        }
+
+        function minifyJSON() {
+            const raw = jsonInput.value;
+            try {
+                const parsed = JSON.parse(raw);
+                const minified = JSON.stringify(parsed);
+                jsonOutput.textContent = minified;
+                updateGutter(minified, outputGutter);
+                showError(null);
+                updateStatus(true);
+            } catch (e) {
+                showError(e.message);
+                updateStatus(false);
+            }
+        }
+
+        function fixJSON() {
+            let raw = jsonInput.value;
+            
+            // 1. Remove comments (// and /* */)
+            raw = raw.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+            // 2. Quote unquoted keys (e.g., { key: -> { "key": )
+            // Look for { or , followed by whitespace, then a word, then optional space and :
+            raw = raw.replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+
+            // 3. Fix single quoted keys (e.g., { 'key': -> { "key": )
+            raw = raw.replace(/([{,]\s*)'([^']+?)'\s*:/g, '$1"$2":');
+
+            // 4. Fix single quoted values (e.g., : 'value' -> : "value")
+            // This regex tries to match 'string' after a colon, handling escaped quotes minimally
+            raw = raw.replace(/:\s*'([^']*)'/g, ': "$1"');
+            
+            // 5. Fix single quoted strings in arrays (e.g., ['a'] -> ["a"])
+            // Matches [ or , followed by space and 'string'
+            raw = raw.replace(/([\[,]\s*)'([^']*)'/g, '$1"$2"');
+
+            // 6. Remove trailing commas (e.g., , } -> } )
+            raw = raw.replace(/,\s*([\]}])/g, '$1');
+
+            jsonInput.value = raw;
+            updateGutter(raw, inputGutter);
+            formatJSON(2); 
+        }
+
+        // --- Helpers ---
+
+        function syntaxHighlight(json) {
+            if (!json) return '';
+            
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function showError(msg) {
+            if (msg) {
+                errorBox.textContent = "Error: " + msg;
+                errorBox.classList.add('show');
+            } else {
+                errorBox.classList.remove('show');
+            }
+        }
+
+        function updateStatus(isValid) {
+            if (!jsonInput.value.trim()) {
+                inputStatus.textContent = "Empty";
+                inputStatus.className = "status-pill";
+                return;
+            }
+            if (isValid) {
+                inputStatus.textContent = "Valid JSON";
+                inputStatus.className = "status-pill valid";
+            } else {
+                inputStatus.textContent = "Invalid JSON";
+                inputStatus.className = "status-pill invalid";
+            }
+        }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                jsonInput.value = e.target.result;
+                updateGutter(jsonInput.value, inputGutter);
+                formatJSON(2);
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset
+        }
+
+        function downloadJSON() {
+            const content = jsonOutput.innerText; 
+            if(!content) return;
+            
+            const blob = new Blob([content], {type: "application/json"});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "formatted.json";
+            link.click();
+        }
+
+        function copyOutput() {
+            const text = jsonOutput.innerText;
+            if(!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = "Copied!";
+                setTimeout(() => btn.textContent = orig, 2000);
+            });
+        }
+
+        function clearAll() {
+            jsonInput.value = '';
+            jsonOutput.innerHTML = '';
+            inputGutter.innerText = '1';
+            outputGutter.innerText = '1';
+            updateStatus(false);
+            showError(null);
+        }
+
+        // Live validation & Auto-Format on type (debounced)
+        let debounceTimer;
+        jsonInput.addEventListener('input', () => {
+            updateGutter(jsonInput.value, inputGutter); 
+            
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const auto = autoFormatCheckbox.checked;
+                
+                try {
+                    if(jsonInput.value.trim()) {
+                        JSON.parse(jsonInput.value); // Just check validity
+                        updateStatus(true);
+                        showError(null);
+                        
+                        if(auto) {
+                            formatJSON(2);
+                        }
+                    } else {
+                        updateStatus(false);
+                    }
+                } catch(e) {
+                    updateStatus(false);
+                    // Don't auto-show error box on typing unless user asks for format
+                }
+            }, 500);
+        });
+
+    </script>
+</body>
+</html>
+
+
