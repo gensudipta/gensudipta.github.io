@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Converter | TranslitMedia</title>
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: #1e293b; /* Slate 800 */
+            --text-primary: #f1f5f9; /* Slate 100 */
+            --text-secondary: #94a3b8; /* Slate 400 */
+            --accent: #6366f1; /* Indigo 500 */
+            --accent-hover: #4f46e5; /* Indigo 600 */
+            --border: #334155; /* Slate 700 */
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .brand svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem 1.5rem;
+        }
+
+        .tool-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            padding: 0.75rem 1rem;
+            background-color: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .stat-item span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--text-primary);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        /* Editor Area */
+        .editor-area {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            background-color: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea::placeholder {
+            color: #475569;
+        }
+
+        /* Controls Area */
+        .controls {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn.primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn.clear {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn.clear:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--success);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .btn-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </button>
+        </div>
+        <div class="brand">
+            <!-- Icon from your JSON -->
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Case Converter
+        </div>
+        <div style="width: 70px;"></div> <!-- Spacer for center alignment -->
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <div class="tool-container">
+            <!-- Toolbar with stats -->
+            <div class="toolbar">
+                <div class="stats">
+                    <div class="stat-item">Characters: <span id="charCount">0</span></div>
+                    <div class="stat-item">Words: <span id="wordCount">0</span></div>
+                </div>
+                <div class="action-group">
+                    <button class="icon-btn" onclick="downloadText()" title="Download .txt">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Text Area -->
+            <div class="editor-area">
+                <textarea id="textInput" placeholder="Type or paste your text here..." spellcheck="false"></textarea>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="btn-grid">
+                    <button class="btn" onclick="convert('upper')">UPPERCASE</button>
+                    <button class="btn" onclick="convert('lower')">lowercase</button>
+                    <button class="btn" onclick="convert('title')">Title Case</button>
+                    <button class="btn" onclick="convert('sentence')">Sentence case</button>
+                    <button class="btn" onclick="convert('alternate')">aLtErNaTiNg</button>
+                    <button class="btn" onclick="convert('inverse')">InVeRsE cAsE</button>
+                    <button class="btn" onclick="convert('reverse')">Reverse Text</button>
+                    <button class="btn primary" onclick="copyToClipboard()">Copy Text</button>
+                    <button class="btn clear" onclick="clearText()">Clear</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Copied to clipboard!
+    </div>
+
+    <script>
+        const textarea = document.getElementById('textInput');
+        const charCountEl = document.getElementById('charCount');
+        const wordCountEl = document.getElementById('wordCount');
+        const toast = document.getElementById('toast');
+
+        // Update stats on typing
+        textarea.addEventListener('input', updateStats);
+
+        function updateStats() {
+            const text = textarea.value;
+            charCountEl.innerText = text.length;
+            
+            // Logic to handle empty string case for word count
+            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            wordCountEl.innerText = words;
+        }
+
+        function convert(type) {
+            let text = textarea.value;
+            if (!text) return;
+
+            switch(type) {
+                case 'upper':
+                    textarea.value = text.toUpperCase();
+                    break;
+                case 'lower':
+                    textarea.value = text.toLowerCase();
+                    break;
+                case 'title':
+                    textarea.value = text.toLowerCase().split(' ').map(function(word) {
+                        return (word.charAt(0).toUpperCase() + word.slice(1));
+                    }).join(' ');
+                    break;
+                case 'sentence':
+                    // Splits by sentence ending punctuation followed by space
+                    textarea.value = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, function(c) {
+                        return c.toUpperCase();
+                    });
+                    break;
+                case 'alternate':
+                    textarea.value = text.split('').map((c, i) => 
+                        i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()
+                    ).join('');
+                    break;
+                case 'inverse':
+                    textarea.value = text.split('').map(c => 
+                        c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()
+                    ).join('');
+                    break;
+                case 'reverse':
+                    textarea.value = text.split('').reverse().join('');
+                    break;
+            }
+            updateStats();
+        }
+
+        function clearText() {
+            textarea.value = '';
+            updateStats();
+            textarea.focus();
+        }
+
+        function copyToClipboard() {
+            if (!textarea.value) return;
+            
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Show toast
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function downloadText() {
+            if (!textarea.value) return;
+            const element = document.createElement('a');
+            const file = new Blob([textarea.value], {type: 'text/plain'});
+            element.href = URL.createObjectURL(file);
+            element.download = "converted_text.txt";
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+    </script>
+</body>
+</html>
+
