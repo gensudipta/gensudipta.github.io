@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translitmedia Secure Note (Offline)</title>
+    <style>
+        /* TOTAL OFFLINE CSS */
+        :root {
+            --brand-color: #0f172a; 
+            --accent-color: #3b82f6; 
+            --bg-color: #f1f5f9;
+            --surface-color: #ffffff;
+            --text-main: #334155;
+            --border-color: #cbd5e1;
+            --status-connected: #22c55e;
+            --status-disconnected: #ef4444;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        header {
+            background-color: var(--brand-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .back-button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover { background: rgba(255,255,255,0.2); }
+
+        /* USB Status Bar */
+        .usb-status-bar {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .usb-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--status-disconnected);
+            box-shadow: 0 0 5px var(--status-disconnected);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .status-dot.active {
+            background-color: var(--status-connected);
+            box-shadow: 0 0 5px var(--status-connected);
+        }
+
+        .link-usb-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .link-usb-btn:hover { background: rgba(255,255,255,0.1); }
+
+        main { padding: 25px; }
+
+        .input-group { margin-bottom: 20px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-family: monospace; 
+            font-size: 1rem;
+            resize: vertical;
+            box-sizing: border-box;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        textarea:focus { outline: none; border-color: var(--accent-color); background: #fff; }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        button.action {
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button.action:active { transform: translateY(1px); }
+
+        .btn-lock { background-color: var(--accent-color); color: white; }
+        .btn-unlock { background-color: var(--brand-color); color: white; }
+        .btn-secondary { background-color: #64748b; color: white; font-size: 0.9rem; }
+        .btn-usb { background-color: #be123c; color: white; font-size: 0.9rem; grid-column: span 2; }
+
+        #status-msg {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+        .status-error { background: #fee2e2; color: #991b1b; display: block !important; }
+        .status-success { background: #dcfce7; color: #166534; display: block !important; }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .toast {
+            background: #334155;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .offline-badge {
+            font-size: 0.7rem;
+            background: #22c55e;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hidden storage for the Self-Locking Mechanism -->
+<div id="embedded-ciphertext" style="display:none;"></div>
+
+<div class="app-container">
+    <header>
+        <div class="header-top">
+            <div style="display:flex; align-items:center;">
+                <h1>TRANSLITMEDIA</h1>
+                <span class="offline-badge">OFFLINE SECURE</span>
+            </div>
+            <button class="back-button" onclick="history.back()">&#8592; Back</button>
+        </div>
+        
+        <!-- USB Monitor Section (Hidden if not supported) -->
+        <div class="usb-status-bar" id="usb-monitor-ui">
+            <div class="usb-indicator">
+                <div id="usb-dot" class="status-dot"></div>
+                <span id="usb-text">USB: Not Monitored</span>
+            </div>
+            <button class="link-usb-btn" onclick="requestUSB()">Link USB</button>
+        </div>
+    </header>
+
+    <div class="toast-container" id="toast-area"></div>
+
+    <main>
+        <div class="input-group">
+            <label for="note-content">Data / Encrypted String</label>
+            <textarea id="note-content" placeholder="Type secret text here OR paste encrypted code..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="note-pass">Encryption Password</label>
+            <input type="password" id="note-pass" placeholder="Password (Required)">
+        </div>
+
+        <div class="input-group">
+            <label for="note-salt">Custom Salt / Context (Optional)</label>
+            <input type="password" id="note-salt" placeholder="e.g. 'Work', '2025', or extra secret phrase">
+        </div>
+
+        <div class="btn-row">
+            <button class="action btn-lock" onclick="performCrypto('encrypt')">🔒 ENCRYPT</button>
+            <button class="action btn-unlock" onclick="performCrypto('decrypt')">🔓 DECRYPT</button>
+        </div>
+
+        <div class="btn-row" style="margin-top: 15px;">
+            <button class="action btn-secondary" onclick="downloadFile()">⬇ Save Text File</button>
+            <button class="action btn-secondary" onclick="triggerImport()">⬆ Load Text File</button>
+            <button class="action btn-usb" onclick="checkUsbAndSave()">💾 Save Locked App (For USB)</button>
+        </div>
+        <input type="file" id="file-input" style="display: none;" onchange="loadFile(this)">
+
+        <div id="status-msg"></div>
+        
+        <div style="text-align:center; margin-top:20px;">
+            <button onclick="clearAll()" style="background:none; border:none; color:#94a3b8; cursor:pointer; text-decoration:underline;">Clear Screen</button>
+        </div>
+    </main>
+</div>
+
+<script>
+    /**
+     * OFFLINE SECURE NOTE + USB MONITOR
+     */
+
+    const statusEl = document.getElementById('status-msg');
+    const contentEl = document.getElementById('note-content');
+    const passEl = document.getElementById('note-pass');
+    const saltInputEl = document.getElementById('note-salt');
+    const embeddedStore = document.getElementById('embedded-ciphertext');
+    
+    // USB Vars
+    let isUsbConnected = false;
+    let hasUsbPermission = false;
+
+    // --- USB DETECTION LOGIC ---
+    
+    // 1. Request Permission (Required by Browser)
+    async function requestUSB() {
+        if (!navigator.usb) {
+            showToast("⚠️ WebUSB not supported in this browser.");
+            return;
+        }
+        try {
+            // Requesting device access. "filters: []" asks for any device, 
+            // but browsers may filter out Mass Storage. 
+            const device = await navigator.usb.requestDevice({ filters: [] });
+            if (device) {
+                hasUsbPermission = true;
+                isUsbConnected = true;
+                updateUsbUI(true, device.productName || "USB Device");
+                showToast(`✅ Connected: ${device.productName || "Device"}`);
+            }
+        } catch (error) {
+            console.log(error);
+            showToast("❌ Connection cancelled or failed.");
+        }
+    }
+
+    // 2. Listen for Events
+    if (navigator.usb) {
+        navigator.usb.addEventListener('connect', (event) => {
+            isUsbConnected = true;
+            updateUsbUI(true, event.device.productName || "USB Device");
+            showToast("🔌 USB Device Attached");
+        });
+
+        navigator.usb.addEventListener('disconnect', (event) => {
+            isUsbConnected = false;
+            updateUsbUI(false, "Disconnected");
+            showToast("🔌 USB Device Detached");
+        });
+        
+        // Initial check of already paired devices
+        navigator.usb.getDevices().then(devices => {
+            if (devices.length > 0) {
+                isUsbConnected = true;
+                hasUsbPermission = true;
+                updateUsbUI(true, devices[0].productName || "USB Device");
+            }
+        });
+    }
+
+    function updateUsbUI(connected, text) {
+        const dot = document.getElementById('usb-dot');
+        const label = document.getElementById('usb-text');
+        if (connected) {
+            dot.classList.add('active');
+            label.textContent = "USB: " + text;
+            label.style.color = "#166534";
+        } else {
+            dot.classList.remove('active');
+            label.textContent = "USB: Disconnected";
+            label.style.color = "#991b1b";
+        }
+    }
+
+    function showToast(message) {
+        const container = document.getElementById('toast-area');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // --- MAIN APP LOGIC ---
+
+    window.onload = function() {
+        // HIDE USB UI IF NOT SUPPORTED
+        if (!navigator.usb) {
+            const usbUI = document.getElementById('usb-monitor-ui');
+            if(usbUI) usbUI.style.display = 'none';
+        }
+
+        const storedData = embeddedStore.textContent.trim();
+        if (storedData) {
+            contentEl.value = storedData;
+            setStatus("🔒 LOCKED FILE DETECTED. Enter password and Decrypt.", "success");
+        }
+    }
+
+    function setStatus(msg, type) {
+        statusEl.className = type === 'error' ? 'status-error' : 'status-success';
+        statusEl.textContent = msg;
+    }
+
+    function clearAll() {
+        contentEl.value = '';
+        passEl.value = '';
+        saltInputEl.value = '';
+        statusEl.style.display = 'none';
+        contentEl.focus();
+    }
+
+    // --- CRYPTO FUNCTIONS ---
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    async function getKey(password) {
+        const keyMaterial = await window.crypto.subtle.importKey(
+            "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+        );
+        return keyMaterial;
+    }
+
+    async function encrypt(text, password) {
+        try {
+            const keyMaterial = await getKey(password);
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+            const key = await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+            );
+
+            const encrypted = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv }, key, enc.encode(text)
+            );
+
+            const buffer = new Uint8Array(salt.byteLength + iv.byteLength + encrypted.byteLength);
+            buffer.set(salt, 0);
+            buffer.set(iv, salt.byteLength);
+            buffer.set(new Uint8Array(encrypted), salt.byteLength + iv.byteLength);
+
+            return btoa(String.fromCharCode(...buffer));
+        } catch (e) { throw new Error("Encryption failed"); }
+    }
+
+    async function decrypt(base64Data, password) {
+        try {
+            const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const salt = buffer.slice(0, 16);
+            const iv = buffer.slice(16, 28);
+            const data = buffer.slice(28);
+
+            const keyMaterial = await getKey(password);
+            const key = await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+            );
+
+            const decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv }, key, data
+            );
+            return dec.decode(decrypted);
+        } catch (e) { throw new Error("Wrong password/salt or invalid data"); }
+    }
+
+    async function performCrypto(action) {
+        const text = contentEl.value.trim();
+        const password = passEl.value;
+        const customSalt = saltInputEl.value.trim();
+        const MAX_CHARS = 20000;
+
+        if (!text) return setStatus("Please enter text content.", "error");
+        if (action === 'encrypt' && text.length > MAX_CHARS) {
+            return setStatus(`Text too long! Limit ${MAX_CHARS} chars.`, "error");
+        }
+        if (!password) return setStatus("Password is required.", "error");
+
+        const effectivePassword = customSalt ? `${password}||${customSalt}` : password;
+        setStatus("Processing...", "success");
+
+        try {
+            let result;
+            if (action === 'encrypt') {
+                result = await encrypt(text, effectivePassword);
+                setStatus("Encryption Complete!", "success");
+            } else {
+                result = await decrypt(text, effectivePassword);
+                setStatus("Decryption Successful.", "success");
+            }
+            contentEl.value = result;
+        } catch (err) {
+            setStatus(err.message, "error");
+        }
+    }
+
+    // --- EXPORT/IMPORT LOGIC ---
+
+    async function downloadFile() {
+        const text = contentEl.value;
+        if (!text) return setStatus("No content.", "error");
+        
+        // Modern Save As Logic
+        if (window.showSaveFilePicker) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'secure-note.txt',
+                    types: [{ description: 'Text File', accept: { 'text/plain': ['.txt'] } }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(text);
+                await writable.close();
+                setStatus("Saved to selected drive!", "success");
+                return;
+            } catch (err) { /* Cancelled */ return; }
+        }
+
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'secure-note.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerImport() { document.getElementById('file-input').click(); }
+    function loadFile(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) { contentEl.value = e.target.result; setStatus("Loaded.", "success"); };
+        reader.readAsText(file);
+        input.value = '';
+    }
+
+    // --- CHECK USB & SAVE ---
+    function checkUsbAndSave() {
+        // Only warn if browser SUPPORTS WebUSB but device is not connected.
+        // If navigator.usb is undefined, we simply assume they are saving to disk manually.
+        if (navigator.usb && !isUsbConnected) {
+            // Show Confirmation Warning
+            const proceed = confirm("⚠️ USB WARNING:\n\nNo USB device is currently detected by this page.\n\nDo you want to proceed and save to your local drive instead?");
+            if (!proceed) return;
+        }
+        saveSelfLockedApp();
+    }
+
+    function saveSelfLockedApp() {
+        const content = contentEl.value.trim();
+        if (!content) return setStatus("Content is empty.", "error");
+        
+        let htmlContent = document.documentElement.outerHTML;
+        const storageRegex = /<div id="embedded-ciphertext" style="display:none;"><\/div>/;
+        const replacement = `<div id="embedded-ciphertext" style="display:none;">${content}</div>`;
+        
+        if (!storageRegex.test(htmlContent)) {
+             const regex2 = /<div id="embedded-ciphertext" style="display:none;">(.*?)<\/div>/;
+             htmlContent = htmlContent.replace(regex2, replacement);
+        } else {
+             htmlContent = htmlContent.replace(storageRegex, replacement);
+        }
+
+        htmlContent = htmlContent.replace(/id="note-pass" value=".*?"/, 'id="note-pass" value=""');
+        htmlContent = htmlContent.replace(/id="note-salt" value=".*?"/, 'id="note-salt" value=""');
+        htmlContent = htmlContent.replace(/class="status-dot active"/, 'class="status-dot"'); // Reset UI state in saved file
+        
+        // Reset the USB status text in the saved file to avoid confusion
+        // We use a regex to find the span text inside the USB UI
+        htmlContent = htmlContent.replace(/<span id="usb-text".*?>.*?<\/span>/, '<span id="usb-text">USB: Not Monitored</span>');
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'LOCKED_NOTE.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        setStatus("App saved! Copy 'LOCKED_NOTE.html' to your USB.", "success");
+    }
+</script>
+
+</body>
+</html>
+
