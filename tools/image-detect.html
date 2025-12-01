@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Forensic Scanner | Translit Media</title>
+    <!-- Terminal.css -->
+    <link rel="stylesheet" href="https://unpkg.com/terminal.css@0.7.2/dist/terminal.min.css" />
+    <!-- Exifr for Deep Metadata -->
+    <script src="https://unpkg.com/exifr/dist/full.umd.js"></script>
+    <style>
+        :root { 
+            --primary-color: #00ff00; 
+            --secondary-color: #00ccff;
+            --bg-color: #151515;
+            --panel-bg: #1a1a1a;
+        }
+        
+        body { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 15px; 
+            background-color: var(--bg-color); 
+            color: #fff; 
+            font-family: "Menlo", "Monaco", "Consolas", monospace;
+            padding-bottom: 50px;
+        }
+
+        h1 { font-size: 1.5rem; word-break: break-word; margin: 0; color: var(--primary-color); }
+        
+        /* Navigation & Tabs */
+        .back-link { display: inline-block; margin-bottom: 20px; color: #888; text-decoration: none; border-bottom: 1px dotted #444; font-size: 0.9em; }
+        
+        .tab-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 5px; 
+            border-bottom: 1px solid #333; 
+            margin-bottom: 20px; 
+        }
+        .tab-btn { 
+            flex: 1 1 auto; 
+            padding: 12px 15px; 
+            cursor: pointer; 
+            background: #111; 
+            border: 1px solid #333; 
+            margin-bottom: -1px; 
+            color: #888;
+            text-align: center;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .tab-btn.active { background: var(--panel-bg); color: var(--primary-color); border: 1px solid var(--primary-color); border-bottom: 1px solid var(--panel-bg); font-weight: bold; }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Controls */
+        .controls { 
+            margin-bottom: 20px; 
+            border: 1px dashed #444; 
+            padding: 15px; 
+            background: #111;
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+        }
+        /* Custom File Input Styling for better Mobile Touch */
+        input[type="file"] { 
+            border: 1px solid #444; 
+            padding: 15px; 
+            background: #222; 
+            color: #fff; 
+            width: 100%; 
+            box-sizing: border-box;
+            min-height: 50px;
+        }
+
+        /* REPORT DASHBOARD */
+        .report-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media(max-width:768px){ 
+            .report-grid { grid-template-columns: 1fr; } 
+            .score-card { order: -1; } 
+        }
+
+        .score-card { background: #000; padding: 20px; border: 1px solid #333; text-align: center; }
+        .score-val { font-size: 3em; font-weight: bold; display: block; line-height: 1; margin-bottom: 5px; }
+        .score-label { color: #aaa; text-transform: uppercase; font-size: 0.8em; }
+
+        .finding-box { background: #1a1a1a; padding: 15px; border-left: 4px solid #444; margin-bottom: 10px; font-size: 0.9em; }
+        .finding-critical { border-left-color: #ff5555; background: #220a0a; }
+        .finding-warning { border-left-color: #ffff00; background: #22220a; }
+        .finding-ok { border-left-color: #00ff00; background: #0a220a; }
+
+        /* VISUAL INSPECTOR */
+        .inspector-controls { 
+            margin-bottom: 15px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            background: #000; 
+            padding: 15px; 
+            border: 1px solid #333; 
+        }
+        .inspector-controls label { width: 100%; font-size: 0.8em; color: #aaa; margin-bottom: -5px; }
+        select, input[type=range] { 
+            background: #222; 
+            color: #fff; 
+            border: 1px solid #444; 
+            padding: 10px; 
+            flex: 1 1 100%; 
+            height: 40px; 
+        }
+        
+        .canvas-container { 
+            text-align: center; 
+            background: #000; 
+            border: 1px solid #333; 
+            padding: 5px; 
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        canvas { max-width: 100%; height: auto; image-rendering: pixelated; object-fit: contain; }
+
+        /* RAW METADATA TABLE */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .meta-table { width: 100%; border-collapse: collapse; font-size: 0.85em; min-width: 300px; }
+        .meta-table th { text-align: left; border-bottom: 1px solid var(--primary-color); padding: 8px; color: var(--primary-color); position: sticky; top: 0; background: var(--bg-color); }
+        .meta-table td { border-bottom: 1px solid #333; padding: 8px; word-break: break-all; vertical-align: top; }
+        .meta-key { color: #aaa; width: 35%; font-weight: bold; }
+        .meta-val { color: #fff; }
+        .search-box { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: #fff; box-sizing: border-box; }
+
+        /* Progress */
+        .progress-bar { width: 100%; height: 6px; background: #222; position: absolute; bottom: 0; left: 0; display: none; }
+        .progress-fill { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
+        .control-wrapper { position: relative; overflow: hidden; }
+
+        .icon { width: 24px; height: 24px; stroke: currentColor; fill: none; vertical-align: middle; margin-right: 5px; }
+        
+        /* Error Box */
+        .error-msg {
+            display: none;
+            background: #440000;
+            color: #ffaaaa;
+            padding: 10px;
+            border: 1px solid #ff0000;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<a href="../index.html" class="back-link">&larr; Back to System</a>
+
+<header style="margin-bottom: 20px;">
+    <h1>Forensic Scanner <span style="font-size:0.5em; color:#666;">ULTIMATE</span></h1>
+    <p style="margin-top:5px; color:#888;">AI Detection • Deep Metadata • Visual Forensics</p>
+</header>
+
+<div id="error-box" class="error-msg"></div>
+
+<!-- MAIN UPLOAD -->
+<div class="controls control-wrapper">
+    <label>Target File (Image):</label>
+    <input type="file" id="upload" accept="image/*">
+    <div class="progress-bar" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
+    <!-- Status display for immediate file selection feedback -->
+    <div id="upload-status" style="font-size: 0.8em; color: var(--secondary-color); margin-top: 5px;">Awaiting file selection...</div>
+</div>
+
+<!-- TABS -->
+<div class="tab-container">
+    <div class="tab-btn active" id="btn-report" onclick="switchTab('report')">1. Analysis Report</div>
+    <div class="tab-btn" id="btn-visual" onclick="switchTab('visual')">2. Visual Inspector</div>
+    <div class="tab-btn" id="btn-metadata" onclick="switchTab('metadata')">3. Full Metadata</div>
+</div>
+
+<!-- TAB 1: REPORT -->
+<div id="tab-report" class="tab-content active">
+    <div class="report-grid">
+        <!-- Score Card (Shows first on Mobile) -->
+        <div>
+            <div class="score-card">
+                <span class="score-val" id="prob-score">--</span>
+                <span class="score-label">Fake Probability</span>
+            </div>
+            <div id="verdict-box" style="margin-top: 10px; text-align: center; font-weight: bold; padding: 15px; background: #1a1a1a; border: 1px solid #333;">
+                STATUS: WAITING FOR FILE...
+            </div>
+            <div style="margin-top: 20px;">
+                <div class="finding-box">
+                    <small style="color:#aaa">SIGNATURE</small><br>
+                    <strong id="sig-display">--</strong>
+                </div>
+                <div class="finding-box">
+                    <small style="color:#aaa">NOISE LEVEL</small><br>
+                    <strong id="noise-display">--</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Findings List -->
+        <div id="findings-list">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h4 style="border-bottom: 1px solid #333; padding-bottom: 5px;">Extracted Strings / Prompts</h4>
+        <div id="strings-box" style="background: #000; padding: 15px; font-size: 0.8em; color: #aaa; max-height: 150px; overflow-y: auto; border: 1px solid #333;">
+            --
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: VISUAL INSPECTOR -->
+<div id="tab-visual" class="tab-content">
+    <div class="inspector-controls">
+        <label>Visual Mode:</label>
+        <select id="view-mode" onchange="updateVisuals()">
+            <option value="ela">ELA (Compression Artifacts)</option>
+            <option value="blue">Blue Channel (AI Detection)</option>
+            <option value="luma">Luminance Gradient (Lighting)</option>
+            <option value="noise">Noise Map (High Contrast)</option>
+        </select>
+        
+        <label>Intensity / Gain:</label>
+        <input type="range" id="sensitivity" min="10" max="200" value="40" oninput="updateVisuals()">
+    </div>
+    
+    <p id="visual-guide" style="color: #00ccff; font-size: 0.85em; margin: 0 0 10px 0; font-weight: bold;"></p>
+    
+    <div class="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+</div>
+
+<!-- TAB 3: FULL METADATA -->
+<div id="tab-metadata" class="tab-content">
+    <input type="text" class="search-box" id="meta-search" placeholder="Filter metadata tags..." onkeyup="filterMeta()">
+    <div class="table-responsive">
+        <table class="meta-table">
+            <thead>
+                <tr><th>Tag Name</th><th>Value</th></tr>
+            </thead>
+            <tbody id="meta-body">
+                <tr><td colspan="2" style="text-align:center; color:#444; padding: 20px;">No Data Loaded</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // --- STATE ---
+    let currentFile = null;
+    let originalImg = null;
+    let fullMetadata = {};
+
+    // --- UTILITY HELPERS ---
+    function switchTab(id) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById('tab-' + id).classList.add('active');
+        document.getElementById('btn-' + id).classList.add('active');
+        
+        if (id === 'visual' && originalImg) {
+            setTimeout(updateVisuals, 50); 
+        }
+    }
+
+    function showError(msg) {
+        const box = document.getElementById('error-box');
+        box.innerText = "Error: " + msg;
+        box.style.display = "block";
+        console.error("Tool Error:", msg);
+        setTimeout(() => box.style.display = "none", 5000);
+    }
+    
+    function formatTime(date) {
+        if (date instanceof Date && !isNaN(date)) {
+            // Match the desired format: Nov 29, 2025 09:28:32
+            return date.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false // 24-hour format
+            });
+        }
+        return String(date);
+    }
+    
+    function formatSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Convert decimal latitude/longitude to Degree-Minute-Second (DMS) format
+    function decimalToDMS(decimal) {
+        const absolute = Math.abs(decimal);
+        const degrees = Math.floor(absolute);
+        const minutes = Math.floor((absolute - degrees) * 60);
+        const seconds = ((absolute - degrees - minutes / 60) * 3600).toFixed(2);
+        return `${degrees}°${minutes}′${seconds}″`;
+    }
+
+    // Function to reliably convert array-based DMS to Decimal Degrees (Fallback)
+    function parseRawGPS(gpsArray, ref) {
+        if (!gpsArray || gpsArray.length < 3) return NaN;
+
+        const getComponentValue = (comp) => {
+            if (Array.isArray(comp) && comp.length === 2 && comp[1] !== 0) {
+                return comp[0] / comp[1]; // Handle rational number array [numerator, denominator]
+            }
+            return parseFloat(comp) || 0;
+        };
+
+        const degrees = getComponentValue(gpsArray[0]);
+        const minutes = getComponentValue(gpsArray[1]);
+        const seconds = getComponentValue(gpsArray[2]);
+        
+        let decimal = degrees + (minutes / 60) + (seconds / 3600);
+        
+        if (ref === 'S' || ref === 'W') {
+            decimal = -decimal;
+        }
+        
+        // Final sanity check
+        return isNaN(decimal) ? NaN : decimal;
+    }
+
+
+    // --- MAIN SCAN PROCESS ---
+    document.getElementById('upload').addEventListener('change', function(e) {
+        if(e.target.files && e.target.files[0]) {
+            currentFile = e.target.files[0];
+            
+            // Clear previous errors and set new status
+            document.getElementById('upload-status').innerText = `File selected: ${currentFile.name} (${formatSize(currentFile.size)}) - Starting analysis...`;
+            document.getElementById('error-box').style.display = 'none';
+
+            // Basic validation
+            if (currentFile.size > 50 * 1024 * 1024) {
+                showError("File too large (>50MB).");
+                currentFile = null; 
+                document.getElementById('upload-status').innerText = "File rejected: Too large.";
+                return;
+            }
+            
+            // Initiate scan
+            startScan();
+        } else {
+             document.getElementById('upload-status').innerText = "Awaiting file selection...";
+        }
+    });
+
+    function startScan() {
+        const prog = document.getElementById('progress');
+        const fill = document.getElementById('progress-fill');
+        
+        prog.style.display = 'block';
+        fill.style.width = '10%';
+        document.getElementById('verdict-box').innerText = "LOADING...";
+        document.getElementById('verdict-box').style.color = "#fff";
+        
+        // Use FileReader to safely read data URL, necessary for image element creation
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const dataUrl = event.target.result;
+            
+            originalImg = new Image();
+            originalImg.onload = function() {
+                // Image successfully loaded into memory, proceed with analysis
+                document.getElementById('upload-status').innerText = `Image data read successfully. Starting pixel analysis.`;
+                processImage();
+            };
+            originalImg.onerror = function() {
+                // Critical failure: Image object couldn't render the file data.
+                showError("Could not render image file. Corrupted data or unsupported format.");
+                console.error("Image object render failed.");
+                prog.style.display = 'none';
+                document.getElementById('upload-status').innerText = "Render failed.";
+            };
+            originalImg.src = dataUrl;
+        };
+        reader.onerror = function(error) {
+            // Failure during file reading (disk access/security)
+            showError("Failed to read file from disk. Security or access error.");
+            prog.style.display = 'none';
+        };
+        // Use readAsDataURL to ensure the image data is available for the Image object
+        reader.readAsDataURL(currentFile);
+    }
+
+    async function processImage() {
+        const fill = document.getElementById('progress-fill');
+        fill.style.width = '30%';
+        document.getElementById('verdict-box').innerText = "ANALYZING PIXELS...";
+        
+        // 1. Setup Canvas (scaling for performance)
+        const maxDim = 1000; 
+        let w = originalImg.width; let h = originalImg.height;
+        if (originalImg.width > maxDim) { 
+            h = originalImg.height * (maxDim / originalImg.width); 
+            w = maxDim; 
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(originalImg, 0, 0, w, h);
+        const data = ctx.getImageData(0, 0, w, h).data;
+
+        // 2. Metrics
+        const noise = calculateNoise(data, w, h);
+        const blueVar = calculateBlueVariance(data, w, h);
+        const histoData = calculateHistogramCombing(data);
+
+        fill.style.width = '60%';
+        document.getElementById('verdict-box').innerText = "READING METADATA...";
+
+        // 3. Metadata & Strings
+        let sig = "Unknown";
+        let strings = [];
+        
+        // Init Basic Meta (always present)
+        fullMetadata = {
+            "File Name": currentFile.name,
+            "File Size": formatSize(currentFile.size) + " (" + currentFile.size + " bytes)",
+            "File Type": currentFile.type,
+            "Image Dimensions": `${originalImg.width} x ${originalImg.height} (${(originalImg.width * originalImg.height / 1000000).toFixed(2)} MP)`,
+            "Last Modified": formatTime(new Date(currentFile.lastModified)),
+            "--- DEEP ANALYSIS ---": "---"
+        };
+
+        try {
+            // Strings (Binary Read)
+            const buff = await currentFile.arrayBuffer();
+            const decoder = new TextDecoder("iso-8859-1");
+            const strHead = decoder.decode(buff.slice(0, 50000));
+            const strTail = decoder.decode(buff.slice(Math.max(0, buff.byteLength - 50000)));
+            const fullStr = strHead + strTail;
+            
+            sig = detectSignature(fullStr);
+            strings = extractInterestingStrings(fullStr);
+            
+            // Deep Metadata with exifr
+            if (typeof exifr !== 'undefined') {
+                try {
+                    const deepMeta = await exifr.parse(currentFile, { 
+                        tiff: true, xmp: true, icc: true, iptc: true, jfif: true,
+                        ihdr: true, ifd0: true, ifd1: true, exif: true, gps: true,
+                        mergeOutput: true,
+                        makerNote: true,
+                        userComment: true,
+                        ifd: true, 
+                        gps: true,
+                        mergeOutput: true
+                    });
+                    
+                    if (deepMeta) {
+                        for (const [key, value] of Object.entries(deepMeta)) {
+                            fullMetadata[key] = value;
+                        }
+                    } else {
+                         fullMetadata["Metadata Info"] = "No detailed tags found by Exifr.";
+                    }
+                } catch(err) {
+                    showError("Metadata parsing issue: " + err.message);
+                    fullMetadata["Metadata Error"] = "Parsing failed (" + err.message + ")";
+                }
+            } else {
+                fullMetadata["System"] = "Deep scan library offline.";
+            }
+            
+        } catch(e) { 
+            showError("Critical file read error: " + e.message);
+        }
+
+        renderMetadata(fullMetadata);
+
+        fill.style.width = '80%';
+document.getElementById('verdict-box').innerText = "RUNNING ELA...";
+
+        // 4. ELA & Report
+        runELAAnalysis(canvas, w, h, function(elaScore, anomalyScore) {
+            generateReport(sig, noise, blueVar, elaScore, anomalyScore, histoData, strings, fullMetadata);
+            fill.style.width = '100%';
+            setTimeout(() => { document.getElementById('progress').style.display = 'none'; }, 500);
+            updateVisuals(); 
+            document.getElementById('upload-status').innerText = `Analysis complete. Probability: ${document.getElementById('prob-score').innerText}`;
+        });
+    }
+
+    // --- VISUAL INSPECTOR LOGIC ---
+    function updateVisuals() {
+        if (!originalImg) {
+            document.getElementById('mainCanvas').style.display = 'none';
+            return;
+        }
+        document.getElementById('mainCanvas').style.display = 'block';
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const mode = document.getElementById('view-mode').value;
+        const scale = parseInt(document.getElementById('sensitivity').value);
+        const guide = document.getElementById('visual-guide');
+
+        let w = originalImg.width; let h = originalImg.height;
+        const maxW = 800;
+        if (originalImg.width > maxW) { h = originalImg.height * (maxW / originalImg.width); w = maxW; }
+
+        canvas.width = w; canvas.height = h;
+
+        ctx.drawImage(originalImg, 0, 0, w, h);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        const out = ctx.createImageData(w, h);
+        const outData = out.data;
+
+        if (mode === 'blue') {
+            guide.innerHTML = "<strong>Blue Channel:</strong> Real photos are noisy. AI is smooth.";
+            for (let i=0; i<data.length; i+=4) {
+                let avgRG = (data[i] + data[i+1]) / 2;
+                let diff = Math.abs(data[i+2] - avgRG) * (scale/10);
+                outData[i] = 0; outData[i+1] = 0; outData[i+2] = diff + 20; outData[i+3] = 255;
+            }
+            ctx.putImageData(out, 0, 0);
+        }
+        else if (mode === 'luma') {
+            guide.innerText = "Luminance Gradient: Highlights lighting inconsistencies.";
+            for (let i=0; i<data.length; i+=4) {
+                let l = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+                let poster = Math.floor(l/16)*16 * (scale/30);
+                outData[i] = poster; outData[i+1] = poster; outData[i+2] = poster; outData[i+3] = 255;
+            }
+            ctx.putImageData(out, 0, 0);
+        }
+        else if (mode === 'noise') {
+            guide.innerText = "Noise Map: Isolates high-frequency grain.";
+            for (let y=1; y<h-1; y++) {
+                for(let x=1; x<w-1; x++) {
+                    let idx = (y*w+x)*4;
+                    let c = (data[idx]+data[idx+1]+data[idx+2])/3;
+                    let n = (data[((y)*w+(x-1))*4] + data[((y)*w+(x-1))*4+1] + data[((y)*w+(x-1))*4+2])/3;
+                    let val = Math.abs(c-n) * scale;
+                    outData[idx] = 0; outData[idx+1] = val; outData[idx+2] = 0; outData[idx+3] = 255;
+                }
+            }
+            ctx.putImageData(out, 0, 0);
+        }
+        else if (mode === 'ela') {
+            guide.innerText = "ELA: White spots indicate edits/compression differences.";
+            const compUrl = canvas.toDataURL('image/jpeg', 0.90);
+            const cImg = new Image();
+            cImg.onload = function() {
+                const c2 = document.createElement('canvas');
+                c2.width = w; c2.height = h;
+                const ctx2 = c2.getContext('2d');
+                ctx2.drawImage(cImg, 0, 0, w, h);
+                const d2 = ctx2.getImageData(0,0,w,h).data;
+                for(let i=0; i<data.length; i+=4) {
+                    outData[i] = Math.abs(data[i]-d2[i]) * scale;
+                    outData[i+1] = Math.abs(data[i+1]-d2[i+1]) * scale;
+                    outData[i+2] = Math.abs(data[i+2]-d2[i+2]) * scale;
+                    outData[i+3] = 255;
+                }
+                ctx.putImageData(out, 0, 0);
+            };
+            cImg.src = compUrl;
+        }
+    }
+
+    // --- CORE ALGORITHMS ---
+    function detectSignature(s) {
+        if(s.includes("Photoshop")) return "Photoshop";
+        if(s.includes("GIMP")) return "GIMP";
+        if(s.includes("Stable")) return "Stable Diffusion";
+        if(s.includes("Midjourney")) return "Midjourney";
+        if(s.includes("Android")) return "Android";
+        if(s.includes("iOS") || s.includes("iPhone")) return "iOS";
+        return "Unknown";
+    }
+
+    function extractInterestingStrings(s) {
+        const regex = /(?:Steps:|Sampler:|CFG scale:|Seed:|Model:|App:|Software:|Date:|prompt:)(?:[ -~]{1,200})/gi;
+        let m, res=new Set(); 
+        while ((m = regex.exec(s)) !== null) res.add(m[0].trim().replace(/\s+/g, ' '));
+        return Array.from(res);
+    }
+
+    function calculateNoise(d, w, h) {
+        let diff=0, count=0;
+        for(let i=0; i<d.length; i+=16) {
+            let l1 = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+            let l2 = d[i+4]*0.299 + d[i+5]*0.587 + d[i+6]*0.114;
+            diff += Math.abs(l1-l2);
+            count++;
+        }
+        return (diff/count);
+    }
+
+    function calculateBlueVariance(d, w, h) {
+        let v=0, c=0;
+        for(let i=0; i<d.length; i+=16) {
+            let avgRG = (d[i]+d[i+1])/2;
+            v += Math.abs(d[i+2] - avgRG);
+            c++;
+        }
+        return (v/c);
+    }
+
+    function calculateHistogramCombing(d) {
+        let h = new Array(256).fill(0);
+        for(let i=0; i<d.length; i+=8) h[d[i]]++; 
+        let gaps = 0;
+        for(let i=10; i<245; i++) {
+            if(h[i]===0 && h[i-1]>0 && h[i+1]>0) gaps++;
+        }
+        return gaps;
+    }
+
+    function runELAAnalysis(sourceCanvas, w, h, cb) {
+        const url = sourceCanvas.toDataURL('image/jpeg', 0.90);
+        const i = new Image();
+        i.onload = function() {
+            const c = document.createElement('canvas'); c.width=w; c.height=h;
+            const ctx = c.getContext('2d'); ctx.drawImage(i,0,0,w,h);
+            const d1 = sourceCanvas.getContext('2d').getImageData(0,0,w,h).data;
+            const d2 = ctx.getImageData(0,0,w,h).data;
+            let err=0, max=0;
+            for(let j=0; j<d1.length; j+=40) {
+                let e = (Math.abs(d1[j]-d2[j])+Math.abs(d1[j+1]-d2[j+1])+Math.abs(d1[j+2]-d2[j+2]))/3;
+                err += e;
+                if(e>max) max=e;
+            }
+            cb(err/(d1.length/40), max);
+        };
+        i.src = url;
+    }
+
+    function generateReport(sig, noise, blue, ela, anomaly, gaps, strings, meta) {
+        let prob = 0;
+        let findings = [];
+
+        // Logic
+        if(sig !== "Unknown") {
+            if(sig.includes("Diffusion") || sig.includes("Midjourney")) { prob = 100; findings.push({t:"AI Signature", d:"File header contains "+sig, s:100}); }
+            else if(sig.includes("Photoshop")) { prob += 30; findings.push({t:"Editor Signature", d:"Header contains "+sig, s:30}); }
+        }
+
+        if(noise < 1.5) { prob += 40; findings.push({t:"Zero-Grain Texture", d:"Noise level ("+noise.toFixed(2)+") is unnatural.", s:40}); }
+        else if(noise > 10) { prob -= 20; findings.push({t:"High Grain", d:"High ISO noise detected (Likely Real).", s:-20}); }
+
+        if(blue < 3.0 && noise < 3.0) { prob += 20; findings.push({t:"Synthetic Color", d:"Blue channel variance is suspiciously low.", s:20}); }
+
+        if(gaps > 5) { prob += 15; findings.push({t:"Histogram Combing", d:"Detected "+gaps+" gaps. Levels/Curves were adjusted.", s:15}); }
+
+        if(ela > 12) { findings.push({t:"Compression Artifacts", d:"High ELA Score ("+ela.toFixed(1)+"). Resaved.", s:10}); }
+
+        // Metadata Logic
+        if(meta && (meta.Make || meta.Model)) {
+            if(noise < 1.5) { prob += 30; findings.push({t:"Meta/Grain Mismatch", d:"Camera metadata present but image lacks sensor noise.", s:30}); }
+        } else {
+             if(sig === "Unknown") findings.push({t:"Metadata Stripped", d:"No EXIF data found.", s:10});
+        }
+        
+        // --- NEW TAGS ---
+
+        // 1. Chroma Subsampling Check (Indicates multiple JPEG saves/heavy editing)
+        if (meta.YCbCrSubSampling) {
+            const subsampling = String(meta.YCbCrSubSampling);
+            if (subsampling === '1,1') {
+                 findings.push({t:"Subsampling Warning", d:`Rare 4:4:4 Subsampling detected. Usually a sign of professional or manipulated output.`, s:10});
+            } else if (subsampling === '2,1' || subsampling === '2,2' ) {
+                 // 2,1 (4:2:2) or 2,2 (4:2:0) is standard camera/web compression, no flag needed
+            } else {
+                 findings.push({t:"Subsampling Anomaly", d:`Unusual YCbCr Subsampling (${subsampling}) detected. May indicate custom processing.`, s:5});
+            }
+        }
+
+        // 2. Date Conflict Check (If file modified date is older than capture date)
+        if (meta.DateTimeOriginal && currentFile.lastModified) {
+            try {
+                const captureDate = new Date(meta.DateTimeOriginal);
+                const fileDate = new Date(currentFile.lastModified);
+                // Check if file date is significantly older than capture date (which shouldn't happen)
+                // A few seconds is fine, but days/weeks indicates manipulation or time shift error
+                if (fileDate.getTime() < captureDate.getTime() - (86400000 * 7)) { // 7 days difference
+                     findings.push({t:"Date Conflict", d:"File Modification Date is significantly older than Capture Date.", s:15});
+                }
+            } catch (e) { /* Ignore date parsing errors */ }
+        }
+
+        // 3. GPS Sanity Check (0,0 coordinate check)
+        const lat = meta.latitude;
+        const lon = meta.longitude;
+        if (lat === 0 && lon === 0) {
+            findings.push({t:"GPS Anomaly", d:"GPS coordinates are exactly 0,0 (Null Island). Likely faked or default setting.", s:20});
+        }
+        
+        // --- GPS CHECK (SHOW RAW DATA IF DECIMAL FAILS) ---
+        if (typeof lat === 'number' && !isNaN(lat) && typeof lon === 'number' && !isNaN(lon)) {
+            const latDMS = decimalToDMS(lat) + (lat >= 0 ? 'N' : 'S');
+            const lonDMS = decimalToDMS(lon) + (lon >= 0 ? 'E' : 'W');
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+            
+            findings.push({t:"Geospatial Data", d:`Location detected: ${latDMS} ${lonDMS} <a href="${mapsLink}" target="_blank" style="color:var(--secondary-color);">View on Map</a>`, s:10});
+        } else if (meta.GPSLatitude && meta.GPSLongitude) {
+            // Fallback to show raw data in report if decimal conversion failed (NaN)
+             findings.push({t:"Geospatial Data (Raw)", d:`Raw Data Present (Conversion Error). Check Full Metadata tab.`, s:10});
+        }
+
+
+        // Clamp & Display
+        prob = Math.min(Math.max(prob, 0), 99);
+        
+        document.getElementById('prob-score').innerText = prob + "%";
+        document.getElementById('prob-score').style.color = prob > 60 ? "#ff5555" : (prob > 30 ? "#ffff00" : "#00ff00");
+        document.getElementById('verdict-box').innerText = prob > 60 ? "HIGH PROBABILITY OF FAKE" : (prob > 30 ? "SUSPICIOUS / EDITED" : "LIKELY AUTHENTIC");
+        document.getElementById('verdict-box').style.color = prob > 60 ? "#ff5555" : (prob > 30 ? "#ffff00" : "#00ff00");
+        
+        document.getElementById('sig-display').innerText = sig;
+        document.getElementById('noise-display').innerText = noise.toFixed(2);
+
+        document.getElementById('strings-box').innerHTML = strings.length > 0 ? strings.join("<br>") : "No text strings found.";
+
+        const list = document.getElementById('findings-list');
+        list.innerHTML = "";
+        findings.forEach(f => {
+            let cls = f.s > 20 ? "finding-critical" : (f.s > 0 ? "finding-warning" : "finding-ok");
+            list.innerHTML += `<div class="finding-box ${cls}"><strong>${f.t}</strong><br><small>${f.d}</small></div>`;
+        });
+    }
+
+    function renderMetadata(meta) {
+        const tbody = document.getElementById('meta-body');
+        tbody.innerHTML = "";
+        
+        // --- Custom Mapping for Cleaner Display ---
+        
+        const metaMap = {
+            "File Name": meta["File Name"],
+            "File Size": meta["File Size"],
+            "File Type": meta["File Type"],
+            "Image Dimensions": meta["Image Dimensions"],
+            "Capture Time": meta.DateTimeOriginal || meta.DateTimeDigitized || meta.DateTime,
+            "Device Model": meta.Model || meta.Make,
+            "Software/Editor": meta.Software,
+            "--- IMAGE DATA ---": "---",
+            "XResolution": meta.XResolution,
+            "YResolution": meta.YResolution,
+            "Orientation": meta.Orientation,
+            "ISO Speed": meta.PhotographicSensitivity,
+            "Focal Length": meta.FocalLength,
+            "Exposure Time": meta.ExposureTime,
+            "Flash Used": meta.Flash,
+            "YCbCr Subsampling": meta.YCbCrSubSampling, // Added Subsampling
+            "--- GPS / LOCATION ---": "---",
+            // The raw data itself is often an array which is why we show it clearly here.
+            "GPS Raw Latitude": meta.GPSLatitude ? JSON.stringify(meta.GPSLatitude) : "[Data Not Read]",
+            "GPS Raw Longitude": meta.GPSLongitude ? JSON.stringify(meta.GPSLongitude) : "[Data Not Read]",
+            "GPS Latitude (Dec)": isNaN(meta.latitude) ? "N/A (Conversion Failed)" : meta.latitude,
+            "GPS Longitude (Dec)": isNaN(meta.longitude) ? "N/A (Conversion Failed)" : meta.longitude,
+            "GPS Date": meta.GPSDateStamp,
+            "--- ICC / COLOR PROFILE ---": "---",
+            "ICC Version": meta.ProfileVersion,
+            "ICC ProfileID": meta.ProfileID,
+            "ICC Description": meta.ProfileDescription,
+            "Color Space": meta.ColorSpace,
+            "--- ADVANCED/RAW ---": "---",
+            "User Comment": meta.UserComment,
+            "MakerNote": meta.MakerNote ? "[Binary Data / View in Report Strings]" : null,
+        };
+
+        for (const key in meta) {
+            if (!(key in metaMap) && !key.includes('GPS') && !key.includes('ICC')) {
+                metaMap[key] = meta[key];
+            }
+        }
+        
+        for (const [key, value] of Object.entries(metaMap)) {
+            if (value === null || value === undefined || value === '---') continue;
+            
+            let displayVal = value;
+            if (value instanceof Date) {
+                displayVal = formatTime(value);
+            }
+            else if (value instanceof Uint8Array) {
+                displayVal = `[Binary ${value.length} bytes]`;
+            }
+            else if (typeof value === 'object' && value !== null) {
+                // If it's a raw GPS array, show it explicitly
+                if (key.includes('Raw Latitude') || key.includes('Raw Longitude')) {
+                     displayVal = String(value).replace(/[\[\]]/g, ''); // Remove brackets for cleaner display
+                } else {
+                    displayVal = JSON.stringify(value, null, 2);
+                }
+            } else if (typeof value === 'number' && !Number.isInteger(value)) {
+                displayVal = value.toFixed(4);
+            }
+
+            tbody.innerHTML += `<tr><td class="meta-key">${key}</td><td class="meta-val">${displayVal}</td></tr>`;
+        }
+    }
+
+    function filterMeta() {
+        const term = document.getElementById('meta-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.meta-table tbody tr');
+        rows.forEach(row => {
+            const txt = row.innerText.toLowerCase();
+            row.style.display = txt.includes(term) ? '' : 'none';
+        });
+    }
+</script>
+
+</body>
+</html>
+
