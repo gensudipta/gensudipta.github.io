@@ -1,0 +1,21 @@
+# This line grants full access to all search engine bots.
+User-agent: *
+Allow: /
+
+# Directives below are for specific bots (optional, but good practice)
+
+# Google's main crawler (for web content)
+User-agent: Googlebot
+Allow: /
+
+# Google's image crawler
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing's main crawler
+User-agent: Bingbot
+Allow: /
+
+# Location of your sitemap, which helps bots discover all your pages.
+# Replace 'sitemap.xml' with the actual name and path of your sitemap file.
+Sitemap: https://translitmedia.com/sitemap.xml
